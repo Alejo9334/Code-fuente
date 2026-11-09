@@ -352,7 +352,7 @@
           wrapper.object3D.visible=true;
           wrapper.object3D.scale.setScalar(1);
           wrapper.object3D.position.z=0;
-          var mesh=wrapper.getObject3D('mesh');
+          var mesh=wrapper.layerPlane.getObject3D('mesh');
           if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
         });
         return;
@@ -372,7 +372,7 @@
           wrapper.object3D.visible=true;
           wrapper.object3D.scale.setScalar(.82+.18*ease);
           wrapper.object3D.position.z=-.055*(1-ease);
-          var mesh=wrapper.getObject3D('mesh');
+          var mesh=wrapper.layerPlane.getObject3D('mesh');
           if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha*ease;
         });
         if(!complete)group.frame=requestAnimationFrame(frame);
@@ -434,9 +434,10 @@
         // con las animaciones propias de cada capa (flotar/pulso/girar).
         var wrapper=element('a-entity');
         wrapper.finalAlpha=Number(layer.opacidad===undefined?1:layer.opacidad);
-        wrapper.object3D.visible=false;
-        wrapper.object3D.scale.setScalar(.82);
-        wrapper.object3D.position.z=-.055;
+        wrapper.setAttribute('visible','false');
+        wrapper.setAttribute('scale','0.82 0.82 0.82');
+        wrapper.setAttribute('position','0 0 -0.055');
+        wrapper.layerPlane=plane;
         wrapper.appendChild(plane);
         target.appendChild(wrapper);
         group.wrappers.push(wrapper);

@@ -1,7 +1,7 @@
 {
-  "version": 2,
+  "version": 3,
   "titulo": "Visor-222 · Catálogo AR de cuadros",
-  "descripcion": "Primer cuadro real: cinco capas PNG y reconocimiento de la imagen impresa",
+  "descripcion": "Catálogo estático validado para Visor-222 Preview",
   "cuadros": [
     {
       "id": "cuadro-creeper-001",
@@ -19,7 +19,9 @@
           "x": 0,
           "y": 0,
           "z": 0.015,
+          "rotation": 0,
           "opacidad": 1,
+          "visible": true,
           "animacion": {
             "tipo": "pulso",
             "amplitud": 0.025,
@@ -35,7 +37,9 @@
           "x": 0,
           "y": 0,
           "z": 0.03,
+          "rotation": 0,
           "opacidad": 1,
+          "visible": true,
           "animacion": {
             "tipo": "flotar",
             "amplitud": 0.018,
@@ -51,7 +55,9 @@
           "x": 0,
           "y": 0,
           "z": 0.05,
+          "rotation": 0,
           "opacidad": 1,
+          "visible": true,
           "animacion": {
             "tipo": "flotar",
             "amplitud": 0.015,
@@ -67,7 +73,9 @@
           "x": 0,
           "y": 0,
           "z": 0.075,
+          "rotation": 0,
           "opacidad": 1,
+          "visible": true,
           "animacion": {
             "tipo": "pulso",
             "amplitud": 0.018,
@@ -83,7 +91,9 @@
           "x": 0,
           "y": 0,
           "z": 0.105,
+          "rotation": 0,
           "opacidad": 1,
+          "visible": true,
           "animacion": {
             "tipo": "flotar",
             "amplitud": 0.012,

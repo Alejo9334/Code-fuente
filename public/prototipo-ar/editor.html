@@ -190,6 +190,7 @@ window.VISOR222_ADMIN.onReady(async function(){
     selectedArtId=id;selectedId=art.capas[0].id;render();
   }
   function reindex(){catalog.cuadros.forEach(function(a,i){a.targetIndex=i;});}
+  function invalidateTracking(){if(catalog){delete catalog.archivoMind;delete catalog.compilador;}}
   function newId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36);}
 
   function asset(src){return /^data:/i.test(src)?src:new URL(src,location.href).href;}
@@ -520,7 +521,7 @@ window.VISOR222_ADMIN.onReady(async function(){
         id:newId('cuadro'),nombre:name,targetIndex:catalog.cuadros.length,
         relacionAltoAncho:ratio,imagenObjetivo:target.src,capas:layers
       };
-      catalog.cuadros.push(art);reindex();
+      catalog.cuadros.push(art);reindex();invalidateTracking();
       selectedArtId=art.id;selectedId=art.capas[0].id;render();
       $('createDialog').close();
       note('Cuadro «'+art.nombre+'» agregado al borrador. Guarda y exporta el JSON como respaldo.');
@@ -531,13 +532,13 @@ window.VISOR222_ADMIN.onReady(async function(){
     if(!catalog||catalog.cuadros.length<2){note('Debes conservar al menos un cuadro.');return;}
     var old=article();if(!confirm('¿Eliminar «'+old.nombre+'» del borrador?'))return;
     catalog.cuadros=catalog.cuadros.filter(function(a){return a.id!==selectedArtId;});
-    reindex();setActiveArt(catalog.cuadros[0].id);
+    reindex();invalidateTracking();setActiveArt(catalog.cuadros[0].id);
     note('Cuadro eliminado del borrador. No se modificaron los archivos de GitHub.');
   });
   function moveArt(offset){
     var list=catalog.cuadros,i=list.findIndex(function(a){return a.id===selectedArtId;}),j=i+offset;
     if(i<0||j<0||j>=list.length)return;
-    var t=list[i];list[i]=list[j];list[j]=t;reindex();render();
+    var t=list[i];list[i]=list[j];list[j]=t;reindex();invalidateTracking();render();
     note('Orden de cuadros actualizado para el reconocimiento AR.');
   }
   $('artUp').addEventListener('click',function(){moveArt(-1);});
@@ -565,7 +566,7 @@ window.VISOR222_ADMIN.onReady(async function(){
   });
   $('changeTarget').addEventListener('change',async function(){
     var file=this.files[0];if(!file)return;
-    try{var image=await resized(file,768,'image/jpeg');if(Math.abs(image.ratio-aspect)>.01)throw Error('La referencia debe tener la misma proporción del lienzo.');article().imagenObjetivo=image.src;render();note('Referencia física reemplazada en este borrador.');}
+    try{var image=await resized(file,768,'image/jpeg');if(Math.abs(image.ratio-aspect)>.01)throw Error('La referencia debe tener la misma proporción del lienzo.');article().imagenObjetivo=image.src;invalidateTracking();render();note('Referencia física reemplazada en este borrador.');}
     catch(e){note(e.message);}
     this.value='';
   });

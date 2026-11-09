@@ -92,6 +92,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <button id="newArt">+ Nuevo cuadro</button>
 <button id="cloneArt" class="subtle">Duplicar</button>
 <button id="deleteArt" class="danger">Eliminar</button>
+<button id="artUp" class="subtle" title="Mover cuadro arriba">↑</button>
+<button id="artDown" class="subtle" title="Mover cuadro abajo">↓</button>
 </div>
 <div class="art" id="artName">Cargando proyecto…</div>
 <div class="field" style="margin-top:11px"><label for="artTitle">Nombre del cuadro seleccionado</label><input id="artTitle" type="text" maxlength="100"></div>
@@ -144,7 +146,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <form id="createForm">
 <div class="field"><label for="createName">Nombre del cuadro</label><input id="createName" type="text" maxlength="100" placeholder="Ej. Paisaje espacial" required></div>
 <div class="field"><label for="createTarget">Imagen exacta que se imprimirá</label><input id="createTarget" type="file" accept="image/jpeg,image/png,image/webp" required></div>
-<div class="field" id="createLayersField"><label for="createLayers">Capas PNG con fondo transparente</label><input id="createLayers" type="file" accept="image/png" multiple required></div>
+<div class="field" id="createLayersField"><label for="createLayers">Capas PNG con fondo transparente · selecciona desde atrás hacia delante</label><input id="createLayers" type="file" accept="image/png" multiple required></div>
 <p class="muted">Las capas deben tener la misma relación de aspecto que la imagen final. Se guardarán en tu borrador local; no se publican automáticamente.</p>
 <div class="dialog-buttons"><button type="submit" id="createConfirm">Crear cuadro</button><button type="button" class="subtle" id="cancelCreate">Cancelar</button></div>
 </form>
@@ -308,6 +310,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
     $('artTitle').value=article().nombre||'';
     drawArts();drawList();drawBoard();populate();
     $('deleteArt').disabled=catalog.cuadros.length<2;
+    var index=catalog.cuadros.findIndex(function(a){return a.id===selectedArtId;});
+    $('artUp').disabled=index<=0;$('artDown').disabled=index>=catalog.cuadros.length-1;
   }
   function controlChanged(){
     var l=selected();if(!l)return;
@@ -398,6 +402,84 @@ dialog h2{font-size:21px;margin:0 0 8px}
     try{sessionStorage.setItem('visor222-prototipo-catalogo',JSON.stringify(catalog));location.href='./index.html?local=1';}
     catch(e){note('No se pudo transferir la configuración a la cámara. Reduce las imágenes o descarga el proyecto.');}
   });
+  function openCreate(mode){
+    creationMode=mode;
+    $('createForm').reset();$('createStatus').textContent='';
+    var cloning=mode==='clone';
+    $('createTitle').textContent=cloning?'Duplicar como otro cuadro':'Crear un cuadro nuevo';
+    $('createDescription').textContent=cloning
+      ? 'Conservarás las capas y sus ajustes, pero debes seleccionar otra imagen física con el mismo formato para que el reconocimiento sea distinto.'
+      : 'Selecciona la imagen física del nuevo cuadro y las capas PNG de fondo a frente.';
+    $('createName').value=cloning?(article().nombre+' · copia'):'';
+    $('createLayersField').hidden=cloning;
+    $('createLayers').required=!cloning;
+    $('createConfirm').textContent=cloning?'Crear copia con nueva imagen':'Crear cuadro';
+    $('createDialog').showModal();
+  }
+  $('newArt').addEventListener('click',function(){openCreate('new');});
+  $('cloneArt').addEventListener('click',function(){openCreate('clone');});
+  $('cancelCreate').addEventListener('click',function(){$('createDialog').close();});
+  $('createForm').addEventListener('submit',async function(e){
+    e.preventDefault();
+    if(busy)return;
+    busy=true;$('createConfirm').disabled=true;
+    try {
+      var name=$('createName').value.trim();
+      var targetFile=$('createTarget').files[0];
+      if(!name||!targetFile)throw Error('Escribe un nombre y selecciona la imagen física.');
+      $('createStatus').textContent='Procesando imagen de reconocimiento…';
+      var target=await resized(targetFile,768,'image/jpeg');
+      var ratio=target.ratio;
+      var layers=[];
+      if(creationMode==='clone') {
+        var old=article();
+        if(Math.abs(old.relacionAltoAncho-ratio)>.01)throw Error('Para duplicar, la nueva imagen debe tener la misma proporción que el cuadro original.');
+        layers=old.capas.map(function(l){return Object.assign({},l,{animacion:Object.assign({},l.animacion)});});
+      } else {
+        var files=Array.from($('createLayers').files);
+        if(!files.length)throw Error('Selecciona al menos una capa PNG.');
+        if(files.length>15)throw Error('En esta versión se admiten hasta 15 capas por cuadro.');
+        for(var i=0;i<files.length;i++){
+          if(files[i].type!=='image/png')throw Error('Las capas deben estar en formato PNG.');
+          $('createStatus').textContent='Procesando capa '+(i+1)+' de '+files.length+'…';
+          var im=await resized(files[i],1024,'image/png');
+          if(Math.abs(im.ratio-ratio)>.01)throw Error('La capa '+files[i].name+' tiene una proporción diferente del cuadro.');
+          layers.push({
+            id:newId('capa'),
+            nombre:files[i].name.replace(/\.png$/i,''),
+            imagen:im.src,
+            baseAncho:1,baseAlto:ratio,ancho:1,alto:ratio,
+            x:0,y:0,z:Math.min(.3,.015+(i*.02)),rotation:0,opacidad:1,visible:true,
+            animacion:{tipo:'flotar',amplitud:.015,duracionMs:2500}
+          });
+        }
+      }
+      var art={
+        id:newId('cuadro'),nombre:name,targetIndex:catalog.cuadros.length,
+        relacionAltoAncho:ratio,imagenObjetivo:target.src,capas:layers
+      };
+      catalog.cuadros.push(art);reindex();
+      selectedArtId=art.id;selectedId=art.capas[0].id;render();
+      $('createDialog').close();
+      note('Cuadro «'+art.nombre+'» agregado al borrador. Guarda y exporta el JSON como respaldo.');
+    }catch(err){$('createStatus').textContent=err.message;note(err.message);}
+    finally{busy=false;$('createConfirm').disabled=false;}
+  });
+  $('deleteArt').addEventListener('click',function(){
+    if(!catalog||catalog.cuadros.length<2){note('Debes conservar al menos un cuadro.');return;}
+    var old=article();if(!confirm('¿Eliminar «'+old.nombre+'» del borrador?'))return;
+    catalog.cuadros=catalog.cuadros.filter(function(a){return a.id!==selectedArtId;});
+    reindex();setActiveArt(catalog.cuadros[0].id);
+    note('Cuadro eliminado del borrador. No se modificaron los archivos de GitHub.');
+  });
+  function moveArt(offset){
+    var list=catalog.cuadros,i=list.findIndex(function(a){return a.id===selectedArtId;}),j=i+offset;
+    if(i<0||j<0||j>=list.length)return;
+    var t=list[i];list[i]=list[j];list[j]=t;reindex();render();
+    note('Orden de cuadros actualizado para el reconocimiento AR.');
+  }
+  $('artUp').addEventListener('click',function(){moveArt(-1);});
+  $('artDown').addEventListener('click',function(){moveArt(1);});
   async function resized(file,width,type){
     var im=await new Promise(function(resolve,reject){
       var u=URL.createObjectURL(file),img=new Image();

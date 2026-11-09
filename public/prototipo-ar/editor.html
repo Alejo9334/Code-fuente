@@ -45,6 +45,15 @@ hr{border:0;border-top:1px solid #2a3b55;margin:5px 0}
 .controls button{flex:1}
 .flag{display:inline-block;background:#182d40;color:#9edff3;border:1px solid #315a70;border-radius:99px;padding:6px 9px;font-size:11px}
 footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
+dialog{background:#102038;color:#edf7ff;border:1px solid #416380;border-radius:22px;max-width:min(440px,calc(100vw - 28px));padding:22px;box-shadow:0 25px 100px #000b}
+dialog::backdrop{background:#050914d9}
+dialog h2{font-size:21px;margin:0 0 8px}
+#qrCanvas{display:grid;place-items:center;padding:16px;background:white;border-radius:12px;width:max-content;max-width:100%;margin:14px auto}
+#qrCanvas img,#qrCanvas canvas{max-width:100%;height:auto}
+#qrLink{color:#7cdbff;word-break:break-all;font-size:11px}
+.dialog-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.dialog-buttons button{flex:1}
+
 .notice{font-size:12px;color:#c7d7ed;padding:12px;border-radius:13px;background:#10283c;border:1px solid #2d5169;line-height:1.55}
 .status{font-size:12px;color:#bfe6ff;min-height:28px;padding:8px 0}
 .switch{display:flex;align-items:center;gap:8px;font-size:12px;color:#c2d4eb}
@@ -58,6 +67,7 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
 <div class="top-actions">
 <button class="subtle" id="reset">Restablecer</button>
 <button class="subtle" id="export">Descargar proyecto JSON</button>
+<button class="subtle" id="shareAR">Probar en mi celular · QR</button>
 <button id="tryAR">Probar en cámara AR</button>
 </div>
 </header>
@@ -109,12 +119,23 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
 </aside>
 </div>
 <footer><div class="notice">El orden de las capas está definido desde el fondo hacia el frente. Al abrir la cámara AR, el visor recibe una copia temporal de esta configuración mediante el almacenamiento de sesión. Si agregas PNG grandes, el navegador podría limitar el tamaño del proyecto; descarga el JSON como respaldo.</div></footer>
+<dialog id="shareDialog" aria-labelledby="shareTitle">
+<h2 id="shareTitle">Probar el cuadro en tu celular</h2>
+<p class="muted">Escanea este QR con la cámara del teléfono. Se abrirá el visor AR con los ajustes actuales de las capas. No necesitas cámara en el PC.</p>
+<div id="qrCanvas" aria-label="Código QR de vista previa"></div>
+<p class="muted">También puedes copiar el enlace para enviártelo por WhatsApp.</p>
+<a id="qrLink" target="_blank" rel="noopener noreferrer"></a>
+<div class="dialog-buttons"><button id="copyAR">Copiar enlace</button><button class="subtle" id="closeQR">Cerrar</button></div>
+<p class="muted" id="qrStatus" role="status"></p>
+</dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
   var draftKey='visor222-editor-visual-v1';
   var catalog=null, selectedId=null, busy=false;
+  var shareURL='';
   var aspect=2047/1638;
   var controlIds=['name','posX','posY','depth','scale','rotation','opacity','animationType','amplitude','duration','visible'];
   function note(msg){$('status').textContent=msg;}
@@ -249,6 +270,50 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
     try{catalog=normalize(JSON.parse(await file.text()));selectedId=article().capas[0].id;render();persist();}
     catch(e){note('No se pudo importar el proyecto: '+e.message);}
     this.value='';
+  });
+  function compact(n){return Number(safeNumber(n,0).toFixed(4));}
+  function makeShareURL(){
+    if(!catalog)throw Error('Primero carga un proyecto.');
+    var art=article();
+    if(/^data:/i.test(art.imagenObjetivo))throw Error('La imagen impresa fue reemplazada solo en el PC. Debes subirla a GitHub antes de compartir esta prueba.');
+    var originalIds=['capa-5','capa-4','capa-3','capa-2','capa-1'];
+    if(art.id!=='cuadro-creeper-001' || art.capas.some(function(l){return originalIds.indexOf(l.id)<0 || /^data:/i.test(l.imagen);})) {
+      throw Error('El QR funciona con las capas publicadas del cuadro Creeper. Para capas nuevas debes subir los PNG a GitHub antes de compartirlas.');
+    }
+    var types={ninguna:0,flotar:1,pulso:2,girar:3};
+    var rows=art.capas.map(function(l){
+      var a=l.animacion||{};
+      return [l.id,compact(l.x),compact(l.y),compact(l.z),compact(l.ancho),compact(l.alto),compact(l.rotation),
+        compact(l.opacidad),l.visible===false?0:1,types[a.tipo]===undefined?0:types[a.tipo],
+        compact(a.amplitud),Math.round(safeNumber(a.duracionMs,2000))];
+    });
+    var data=JSON.stringify([1,art.id,rows]);
+    var encoded=btoa(data).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    var url=new URL('./index.html',location.href);
+    url.searchParams.set('share',encoded);
+    if(url.href.length>2400)throw Error('Hay demasiados ajustes para un QR legible. Simplifica las capas o exporta JSON.');
+    return url.href;
+  }
+  $('shareAR').addEventListener('click',function(){
+    try {
+      shareURL=makeShareURL();
+      var container=$('qrCanvas');container.replaceChildren();
+      $('qrLink').href=shareURL;$('qrLink').textContent=shareURL;
+      $('qrStatus').textContent='';
+      if(!window.QRCode)throw Error('No se pudo cargar el generador QR. Puedes copiar el enlace.');
+      new QRCode(container,{text:shareURL,width:245,height:245,correctLevel:QRCode.CorrectLevel.L});
+      $('shareDialog').showModal();
+      note('Código QR preparado con los cambios actuales. Abre el enlace en tu celular.');
+    }catch(err){
+      if(shareURL && !window.QRCode){$('shareDialog').showModal();$('qrStatus').textContent=err.message;}
+      else note(err.message);
+    }
+  });
+  $('closeQR').addEventListener('click',function(){$('shareDialog').close();});
+  $('copyAR').addEventListener('click',async function(){
+    if(!shareURL)return;
+    try {await navigator.clipboard.writeText(shareURL);$('qrStatus').textContent='Enlace copiado. Ábrelo desde el celular.';}
+    catch(err){$('qrStatus').textContent='Selecciona y copia manualmente el enlace de arriba.';}
   });
   $('tryAR').addEventListener('click',function(){
     if(!catalog)return;

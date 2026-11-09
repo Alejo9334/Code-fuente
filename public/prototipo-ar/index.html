@@ -14,14 +14,36 @@
     html, body, #stage { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #050b1c; }
     #stage { position: fixed; inset: 0; }
     #stage a-scene, #stage canvas { width: 100% !important; height: 100% !important; }
+    /* La cámara ocupa toda el área segura del teléfono, sin controles laterales. */
+    html, body { min-height: 100dvh; overscroll-behavior: none; }
+    #stage { height: 100dvh; }
+    #stage a-scene, #stage canvas { touch-action: none; }
     .hud { position: fixed; z-index: 50; pointer-events: none; color: white; }
-    #top { top: max(18px, env(safe-area-inset-top)); left: 18px; right: 18px; display: flex; align-items: center; justify-content: space-between; }
+    #top { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #top .top-actions { display: flex; gap: 8px; align-items: center; }
+    #immersive { display: none; color: white; background: #071b35c9; border: 1px solid #ffffff55; border-radius: 12px; box-shadow: none; padding: 9px 12px; min-height: 42px; font-size: 13px; font-weight: 650; backdrop-filter: blur(12px); }
+    body.running #immersive { display: inline-flex; align-items: center; justify-content: center; }
+    body.immersive #top .brand { opacity: .45; }
+    body.immersive #bottom #message { opacity: 0; transform: translateY(14px); pointer-events: none; }
+    #bottom #message { transition: opacity .3s, transform .3s; }
+    body.immersive #bottom { bottom: max(10px, env(safe-area-inset-bottom)); }
+    body.immersive #stop { padding: 10px 18px; font-size: 12px; opacity: .7; }
     .brand { font-size: 16px; letter-spacing: .02em; font-weight: 750; text-shadow: 0 2px 12px #000; }
     .pill { padding: 8px 11px; border: 1px solid #ffffff40; border-radius: 999px; background: #06132cbb; backdrop-filter: blur(12px); font-size: 12px; }
     #reticle { left: 50%; top: 49%; transform: translate(-50%,-50%); width: min(68vw, 290px); aspect-ratio: 4/3; border: 2px solid #8dd3ff99; border-radius: 24px; box-shadow: 0 0 0 999px #00000025; transition: opacity .3s; }
     #reticle::before, #reticle::after { content: ""; position: absolute; width: 34px; height: 34px; border: 4px solid #6ed6ff; border-radius: 12px; }
     #reticle::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
     #reticle::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+    #reticle { pointer-events: none; }
+    #recognitionPulse { position: fixed; z-index: 45; left: 50%; top: 49%; width: min(68vw,290px); aspect-ratio: 4/3; transform: translate(-50%,-50%) scale(.94); border: 2px solid #6df4ff; border-radius: 24px; opacity: 0; pointer-events: none; box-shadow: 0 0 25px #54d8ff99, inset 0 0 30px #54d8ff33; }
+    #recognitionLabel { position: absolute; left: 50%; bottom: -44px; transform: translateX(-50%); padding: 8px 13px; border-radius: 100px; white-space: nowrap; font-size: 12px; background: #06192bec; color: #d8faff; border: 1px solid #83edff99; }
+    #recognitionPulse.active { animation: recognitionGlow 1.05s ease-out both; }
+    @keyframes recognitionGlow {
+      0% { opacity: 0; transform: translate(-50%,-50%) scale(.88); }
+      25% { opacity: 1; transform: translate(-50%,-50%) scale(1.03); }
+      75% { opacity: .9; }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.15); }
+    }
     #bottom { bottom: max(20px, env(safe-area-inset-bottom)); left: 18px; right: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
     #message { max-width: 430px; padding: 12px 16px; border-radius: 16px; background: #08172ddd; backdrop-filter: blur(12px); border: 1px solid #ffffff25; font-size: 13px; line-height: 1.45; }
     button { pointer-events: auto; appearance: none; border: 0; border-radius: 14px; padding: 14px 24px; font: inherit; font-size: 15px; font-weight: 750; background: #5dd4ff; color: #072034; box-shadow: 0 8px 28px #0006; cursor: pointer; }
@@ -38,7 +60,10 @@
     body.detected #reticle { opacity: 0; }
     body:not(.running) #stop { display: none; }
     body.running #stop { display: inline-block; }
-    @media (prefers-reduced-motion: reduce) { #reticle { transition: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      #reticle, #bottom #message { transition: none; }
+      #recognitionPulse.active { animation: none; opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -53,8 +78,9 @@
       <p class="hint">Sin QR · Sin instalación · Requiere permiso de cámara y conexión HTTPS</p>
     </div>
   </div>
-  <div class="hud" id="top"><span class="brand">VISOR<span style="color:#5dd4ff">·222</span></span><span class="pill" id="state">Preparando</span></div>
+  <div class="hud" id="top"><span class="brand">VISOR<span style="color:#5dd4ff">·222</span></span><div class="top-actions"><span class="pill" id="state">Preparando</span><button id="immersive" aria-pressed="false" aria-label="Activar vista inmersiva">⛶ <span id="immersiveLabel">Pantalla completa</span></button></div></div>
   <div class="hud" id="reticle" aria-hidden="true"></div>
+  <div id="recognitionPulse" aria-hidden="true"><span id="recognitionLabel">✓ Imagen reconocida</span></div>
   <div class="hud" id="bottom">
     <span id="message" role="status" aria-live="polite">Prepara el cuadro frente a la cámara.</span>
     <button id="stop">Cerrar cámara</button>
@@ -68,6 +94,11 @@
   var status = document.getElementById('state');
   var message = document.getElementById('message');
   var count = document.getElementById('count');
+  var immersiveButton=document.getElementById('immersive');
+  var immersiveLabel=document.getElementById('immersiveLabel');
+  var recognitionPulse=document.getElementById('recognitionPulse');
+  var motionReduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var pulseTimer=null;
   var scene = null;
   var ready = false;
   var tracked = new Set();
@@ -80,6 +111,37 @@
     message.textContent = text;
     status.textContent = short || text;
   }
+
+  function pulseRecognition(){
+    recognitionPulse.classList.remove('active');
+    void recognitionPulse.offsetWidth;
+    recognitionPulse.classList.add('active');
+    clearTimeout(pulseTimer);
+    pulseTimer=setTimeout(function(){recognitionPulse.classList.remove('active');},motionReduced?850:1100);
+  }
+
+  function immersiveState(enabled) {
+    document.body.classList.toggle('immersive',enabled);
+    immersiveButton.setAttribute('aria-pressed',String(enabled));
+    immersiveButton.setAttribute('aria-label',enabled?'Salir de vista inmersiva':'Activar vista inmersiva');
+    immersiveLabel.textContent=enabled?'Salir de inmersión':'Pantalla completa';
+  }
+  immersiveButton.addEventListener('click',async function(){
+    var enabled=!document.body.classList.contains('immersive');
+    immersiveState(enabled);
+    if(enabled&&document.documentElement.requestFullscreen){
+      try {await document.documentElement.requestFullscreen({navigationUI:'hide'});}
+      catch(err){console.info('Pantalla completa del navegador no disponible; sigue vista inmersiva.',err);}
+    } else if(!enabled&&document.fullscreenElement&&document.exitFullscreen){
+      try{await document.exitFullscreen();}catch(err){console.info(err);}
+    }
+  });
+  document.addEventListener('fullscreenchange',function(){
+    if(!document.fullscreenElement&&document.body.classList.contains('immersive')){
+      // El usuario también puede salir del fullscreen desde el sistema.
+      immersiveState(false);
+    }
+  });
 
   function element(tag, attributes) {
     var node = document.createElement(tag);

@@ -7,7 +7,7 @@
 <title>Visor-222 | Editor visual de capas</title>
 <style>
 :root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080f1c;color:#eef6ff;color-scheme:dark}*{box-sizing:border-box}body{margin:0}
-button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+[hidden]{display:none!important}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
 header{height:72px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #233147;gap:12px;background:#0d1828}
 .brand{font-size:20px;font-weight:850;letter-spacing:-.06em}.brand em{color:#58cafd;font-style:normal}.brand small{font-size:12px;color:#90a8c5;font-weight:500;letter-spacing:0}
 button{background:#50c9f0;color:#072032;padding:11px 15px;border:0;border-radius:12px;font-size:13px;font-weight:750}
@@ -116,7 +116,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <label class="switch"><input id="animatePreview" type="checkbox" checked> Animar vista previa</label>
 </div>
 </section>
-<div class="notice"><strong>Edición local, no privada:</strong> estos ajustes se guardan únicamente en este navegador o en un JSON descargado. No se publican automáticamente para tus clientes y esta página aún no tiene autenticación. La versión pública original no cambia.</div>
+<div class="notice"><strong>Administración local de varios cuadros:</strong> puedes crear diseños diferentes, pero tus nuevas imágenes quedan guardadas en este navegador o en un JSON exportado. El QR entre PC y celular solo funciona con cuadros que tengan sus imágenes publicadas; todavía no hay sincronización automática ni acceso administrativo privado. La aplicación principal sigue intacta.</div>
 <div class="status" id="status" role="status" aria-live="polite"></div>
 </main>
 <aside class="panel right">
@@ -139,7 +139,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="controls full"><button id="remove" class="danger">Eliminar capa</button></div>
 </aside>
 </div>
-<footer><div class="notice">El orden de las capas está definido desde el fondo hacia el frente. Al abrir la cámara AR, el visor recibe una copia temporal de esta configuración mediante el almacenamiento de sesión. Si agregas PNG grandes, el navegador podría limitar el tamaño del proyecto; descarga el JSON como respaldo.</div></footer>
+<footer><div class="notice">Cada cuadro tiene una imagen física distinta y sus propias capas, ordenadas de fondo a frente. Para probar varios cuadros en un mismo celular, importa el JSON en el editor de ese teléfono y pulsa «Probar en cámara AR». La transferencia local usa almacenamiento del navegador; no publiques enlaces con datos privados. Guarda el JSON como respaldo antes de cerrar.</div></footer>
 <dialog id="createDialog" aria-labelledby="createTitle">
 <h2 id="createTitle">Nuevo cuadro AR</h2>
 <p class="muted" id="createDescription">Registra una imagen única para el reconocimiento y al menos una capa PNG con transparencia.</p>
@@ -154,7 +154,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 </dialog>
 <dialog id="shareDialog" aria-labelledby="shareTitle">
 <h2 id="shareTitle">Probar el cuadro en tu celular</h2>
-<p class="muted">Escanea este QR con la cámara del teléfono. Se abrirá el visor AR con los ajustes actuales de las capas. No necesitas cámara en el PC.</p>
+<p class="muted">Escanea este QR con la cámara del teléfono. Se abrirá el visor AR con los ajustes del cuadro seleccionado, siempre que sus archivos ya estén publicados en GitHub.</p>
 <div id="qrCanvas" aria-label="Código QR de vista previa"></div>
 <p class="muted">También puedes copiar el enlace para enviártelo por WhatsApp.</p>
 <a id="qrLink" target="_blank" rel="noopener noreferrer"></a>
@@ -397,10 +397,41 @@ dialog h2{font-size:21px;margin:0 0 8px}
     try {await navigator.clipboard.writeText(shareURL);$('qrStatus').textContent='Enlace copiado. Ábrelo desde el celular.';}
     catch(err){$('qrStatus').textContent='Selecciona y copia manualmente el enlace de arriba.';}
   });
-  $('tryAR').addEventListener('click',function(){
+  function saveForCamera(data){
+    return new Promise(function(resolve,reject){
+      if(!window.indexedDB){reject(Error('IndexedDB no disponible'));return;}
+      var request=indexedDB.open('visor222-pruebas-ar',1);
+      request.onupgradeneeded=function(){
+        var db=request.result;if(!db.objectStoreNames.contains('proyectos'))db.createObjectStore('proyectos');
+      };
+      request.onerror=function(){reject(request.error||Error('No se abrió la base de datos local'));};
+      request.onsuccess=function(){
+        var db=request.result;
+        try{
+          var transaction=db.transaction('proyectos','readwrite');
+          transaction.objectStore('proyectos').put(data,'visor-actual');
+          transaction.oncomplete=function(){db.close();resolve();};
+          transaction.onerror=function(){db.close();reject(transaction.error||Error('No se pudo guardar la prueba AR'));};
+        }catch(err){db.close();reject(err);}
+      };
+    });
+  }
+  $('tryAR').addEventListener('click',async function(){
     if(!catalog)return;
-    try{sessionStorage.setItem('visor222-prototipo-catalogo',JSON.stringify(catalog));location.href='./index.html?local=1';}
-    catch(e){note('No se pudo transferir la configuración a la cámara. Reduce las imágenes o descarga el proyecto.');}
+    $('tryAR').disabled=true;
+    try{
+      reindex();
+      note('Preparando '+catalog.cuadros.length+' cuadro(s) para el visor AR…');
+      await saveForCamera(JSON.stringify(catalog));
+      location.href='./index.html?local=idb';
+    }catch(e){
+      try{
+        sessionStorage.setItem('visor222-prototipo-catalogo',JSON.stringify(catalog));
+        location.href='./index.html?local=1';
+      }catch(err){
+        note('El proyecto supera el espacio del navegador. Exporta el JSON y prueba en un dispositivo con más almacenamiento.');
+      }
+    }finally{$('tryAR').disabled=false;}
   });
   function openCreate(mode){
     creationMode=mode;

@@ -31,7 +31,7 @@ h1{font-size:17px;margin:0 0 6px}h2{font-size:14px;margin:0 0 12px}.muted{color:
 .layerplane{position:absolute;transform-style:preserve-3d;pointer-events:none;transform-origin:center}
 .layerplane img{display:block;width:100%;height:100%;object-fit:fill;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
 .layerplane.focus{outline:2px dashed #58c9f4;outline-offset:2px}
-@keyframes floaty{from{translate:0 0}to{translate:0 -2.5%}}
+@keyframes floaty{from{translate:0 0}to{translate:0 var(--float-distance,-2.5%)}}
 @keyframes pulse{from{scale:1}to{scale:var(--pulse,1.05)}}
 @keyframes turn{from{rotate:0deg}to{rotate:var(--angle,8deg)}}
 .right{display:flex;flex-direction:column;gap:13px}
@@ -179,7 +179,7 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
       pic.style.opacity=String(safeNumber(l.opacidad,1));
       if($('animatePreview').checked&&l.animacion){
         var ani=l.animacion,dur=Math.max(400,safeNumber(ani.duracionMs,2000));
-        if(ani.tipo==='flotar'){pic.style.animation='floaty '+dur+'ms ease-in-out infinite alternate';pic.style.setProperty('--float',''+safeNumber(ani.amplitud,.02));}
+        if(ani.tipo==='flotar'){pic.style.animation='floaty '+dur+'ms ease-in-out infinite alternate';pic.style.setProperty('--float-distance',(-safeNumber(ani.amplitud,.02)/aspect*100)+'%');}
         else if(ani.tipo==='pulso'){pic.style.setProperty('--pulse',String(1+safeNumber(ani.amplitud,.03)));pic.style.animation='pulse '+dur+'ms ease-in-out infinite alternate';}
         else if(ani.tipo==='girar'){pic.style.setProperty('--angle',safeNumber(ani.amplitud,0)+'deg');pic.style.animation='turn '+dur+'ms ease-in-out infinite alternate';}
       }
@@ -193,9 +193,16 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
     $('scale').value=safeNumber(l.ancho,1)/safeNumber(l.baseAncho,1);
     $('rotation').value=l.rotation||0;$('opacity').value=l.opacidad;
     $('animationType').value=l.animacion.tipo||'ninguna';
-    $('amplitude').value=Math.min(.25,Math.abs(safeNumber(l.animacion.amplitud,0)));
+    configureAmplitude();
+    $('amplitude').value=Math.min(Number($('amplitude').max),Math.abs(safeNumber(l.animacion.amplitud,0)));
     $('duration').value=l.animacion.duracionMs||2000;
     $('visible').checked=l.visible!==false;updateOutputs();
+  }
+  function configureAmplitude(){
+    var rotating=$('animationType').value==='girar';
+    $('amplitude').max=rotating?'45':'0.25';
+    $('amplitude').step=rotating?'1':'0.005';
+    if(Number($('amplitude').value)>Number($('amplitude').max))$('amplitude').value=rotating?'12':'0.025';
   }
   function updateOutputs(){
     var values={
@@ -205,7 +212,7 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
       scale:Math.round(Number($('scale').value)*100)+'%',
       rotation:$('rotation').value+'°',
       opacity:Math.round(Number($('opacity').value)*100)+'%',
-      amplitude:Number($('amplitude').value).toFixed(3),
+      amplitude:$('animationType').value==='girar'?$('amplitude').value+'°':Number($('amplitude').value).toFixed(3),
       duration:(Number($('duration').value)/1000).toFixed(1)+' s'
     };
     Object.keys(values).forEach(function(id){$(id+'Val').textContent=values[id];});
@@ -213,6 +220,7 @@ footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
   function render(){if(!catalog)return;$('artName').textContent=article().nombre||article().id;drawList();drawBoard();populate();}
   function controlChanged(){
     var l=selected();if(!l)return;
+    configureAmplitude();
     l.nombre=$('name').value||l.id;l.x=Number($('posX').value);l.y=Number($('posY').value);
     l.z=Number($('depth').value);l.rotation=Number($('rotation').value);
     var scale=Number($('scale').value);

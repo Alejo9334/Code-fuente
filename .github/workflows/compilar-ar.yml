@@ -6,6 +6,8 @@ on:
       - desarrollo/multicuadros-ar-v2
     paths:
       - scripts/compilar-objetivos-ar.mjs
+      - scripts/optimizar-imagenes-ar.mjs
+      - public/prototipo-ar/**/*.png
       - .github/workflows/compilar-ar.yml
       - public/prototipo-ar/catalogo.json
   workflow_dispatch:
@@ -30,11 +32,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Instalar compilador AR aislado
+      - name: Instalar optimizador y compilador AR aislados
         run: |
           mkdir -p .ar-tools
-          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5
+          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5 sharp@0.34.4
           cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
+          cp scripts/optimizar-imagenes-ar.mjs .ar-tools/optimizar.mjs
+      - name: Optimizar capas PNG sin sobrescribir originales
+        run: node .ar-tools/optimizar.mjs
       - name: Compilar las referencias y generar targets.mind
         run: node .ar-tools/compilar.mjs
       - name: Verificar archivo precompilado
@@ -45,15 +50,15 @@ jobs:
           const d=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
           if(d.archivoMind!=='./targets.mind'||d.compilador.cantidadObjetivos!==d.cuadros.length)throw Error('Archivo incompatible');
           "
-      - name: Publicar SOLO el archivo .mind y catálogo en desarrollo
+      - name: Publicar archivos optimizados y .mind SOLO en desarrollo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- public/prototipo-ar/catalogo.json public/prototipo-ar/targets.mind
+          git add -A -- public/prototipo-ar
           if git diff --cached --quiet; then
             echo "Objetivos AR sin cambios"
           else
-            git commit -m "Optimizar reconocimiento AR con targets.mind precompilado"
+            git commit -m "Optimizar capas AR y reconocimiento con targets.mind"
             for intento in 1 2 3; do
               git fetch origin desarrollo/multicuadros-ar-v2
               git rebase FETCH_HEAD

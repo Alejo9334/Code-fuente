@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visor-222 | Informe de imágenes optimizadas</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;color:#eaf4ff;background:#080f1b}
+*{box-sizing:border-box}body{margin:0}header,main{max-width:1060px;margin:auto;padding:25px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;border-bottom:1px solid #263d57}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:19px;margin:24px 0 16px}
+p{font-size:14px;line-height:1.55;color:#a5bdd9}a{color:#74d9ff;text-decoration:none}
+nav{display:flex;gap:14px;font-size:13px}strong{color:#d8f2ff}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric,.card{background:#112038;border:1px solid #294362;border-radius:17px;padding:20px}
+.metric span{display:block;color:#a3bbd8;font-size:12px}
+.metric strong{display:block;font-size:29px;margin-top:8px;font-variant-numeric:tabular-nums}
+.card{display:grid;gap:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pair figure{margin:0;min-width:0;background:#091526;border:1px solid #294362;border-radius:9px;padding:7px}
+.pair img{width:100%;height:180px;object-fit:contain;background:repeating-conic-gradient(#26384e 0% 25%,#152338 0% 50%) 50%/14px 14px}
+figcaption{font-size:11px;color:#9fb4cb;text-align:center;margin:6px 0}
+.itemtop{display:flex;justify-content:space-between;gap:8px;align-items:center}
+small{color:#9cb5d3}em{font-style:normal;color:#6df3c5;font-weight:800}
+.progress{height:8px;overflow:hidden;border-radius:99px;background:#304963}
+.progress>div{height:100%;background:#63d8fd}
+.notice{padding:17px;margin:22px 0;border:1px solid #355373;background:#12263a;border-radius:12px}
+@media(max-width:680px){header,main{padding:16px}.grid{grid-template-columns:1fr}.metric strong{font-size:25px}.pair img{height:150px}}
+</style>
+</head><body>
+<header><div><h1>Visor·222 <span style="color:#63d8fd">/ Optimización</span></h1><p>Comparación real de los archivos AR publicados en Preview.</p></div><nav><a href="./index.html">Visor AR</a><a href="./login.html">Administrador</a></nav></header>
+<main>
+<div class="grid">
+<div class="metric"><span>Peso de PNG originales</span><strong id="before">—</strong></div>
+<div class="metric"><span>Peso que descarga el visor</span><strong id="after">—</strong></div>
+<div class="metric"><span>Ahorro acumulado</span><strong id="percent">—</strong></div>
+</div>
+<h2>Resultados por capa</h2><div id="layers" class="grid" aria-live="polite"><p>Cargando informe…</p></div>
+<div class="notice"><strong>Transparencia y dimensiones conservadas.</strong><p>Las capas originales PNG permanecen guardadas. Cuando una versión WebP pesa menos, el visor la usa automáticamente. Algunas capas utilizan compresión de calidad 93/100, por lo que puede haber diferencias mínimas de color. Las imágenes de reconocimiento físico permanecen intactas.</p></div>
+</main>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+function bytes(value){return(value/1048576).toLocaleString('es-CO',{maximumFractionDigits:2})+' MB';}
+function safeFile(asset){
+  if(typeof asset!=='string'||!/^\.\/[\w./-]+$/.test(asset)||asset.includes('..'))throw Error('Ruta incorrecta');
+  return new URL(asset,location.href).href;
+}
+fetch('./optimizacion-imagenes.json',{cache:'no-store'}).then(function(res){
+  if(!res.ok)throw Error('Todavía no está disponible el informe de optimización');
+  return res.json();
+}).then(function(report){
+  $('before').textContent=bytes(report.totalOriginal);
+  $('after').textContent=bytes(report.totalServido);
+  $('percent').textContent=report.ahorroPorcentaje+'%';
+  var root=$('layers');root.replaceChildren();
+  report.imagenes.forEach(function(item,i){
+    var card=document.createElement('section');card.className='card';
+    var top=document.createElement('div');top.className='itemtop';
+    var name=document.createElement('strong');name.textContent='Capa '+(i+1);
+    var reduction=document.createElement('em');reduction.textContent='−'+item.ahorroPorcentaje+'%';
+    top.append(name,reduction);
+    var pair=document.createElement('div');pair.className='pair';
+    [[item.original,'PNG original'],[item.usado,'Archivo para AR']].forEach(function(entry){
+      var figure=document.createElement('figure'),img=document.createElement('img');
+      img.loading='lazy';img.src=safeFile(entry[0]);img.alt=entry[1];
+      var cap=document.createElement('figcaption');cap.textContent=entry[1];
+      figure.append(img,cap);pair.append(figure);
+    });
+    var details=document.createElement('small');
+    details.textContent=bytes(item.bytesOriginal)+' → '+bytes(item.bytesOptimizado)+' · '+item.metodo;
+    var bar=document.createElement('div');bar.className='progress';
+    var part=document.createElement('div');part.style.width=item.ahorroPorcentaje+'%';bar.append(part);
+    card.append(top,pair,details,bar);root.append(card);
+  });
+  if(!report.imagenes.length)root.textContent='El catálogo todavía no tiene capas optimizadas.';
+}).catch(function(err){$('layers').textContent=err.message;});
+})();
+</script></body></html>

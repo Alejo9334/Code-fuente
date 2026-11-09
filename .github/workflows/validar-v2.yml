@@ -32,4 +32,6 @@ jobs:
       - name: Compilar Vite
         run: npm run build
       - name: Comprobar visor generado
-        run: test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json
+        run: test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json && test -f dist/prototipo-ar/crear-cuadro.html
+      - name: Validar scripts de prueba
+        run: node scripts/verificar-prototipo-ar.mjs

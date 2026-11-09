@@ -42,3 +42,16 @@ jobs:
         run: test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json && test -f dist/prototipo-ar/crear-cuadro.html && test -f dist/prototipo-ar/editor.html && test -f dist/prototipo-ar/login.html && test -f dist/prototipo-ar/admin-auth.js && test -f dist/prototipo-ar/auth-config.js
       - name: Validar scripts de prueba
         run: node scripts/verificar-prototipo-ar.mjs
+      - name: Preparar publicación de muestra sin alterar catálogo
+        run: |
+          node scripts/preparar-publicacion-ar.mjs proyectos/ejemplo-publicacion.json
+          test -f tmp/ar-publicacion-revision/catalogo.json
+          test -f tmp/ar-publicacion-revision/cuadro-original.png.png
+          test -f tmp/ar-publicacion-revision/capa-1.png.png
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          const original=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
+          const preview=JSON.parse(fs.readFileSync('tmp/ar-publicacion-revision/catalogo.json','utf8'));
+          if(original.cuadros.length!==preview.cuadros.length) throw Error('Publicador descartó cuadros');
+          "
+

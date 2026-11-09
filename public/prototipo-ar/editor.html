@@ -19,6 +19,18 @@ h1{font-size:17px;margin:0 0 6px}h2{font-size:14px;margin:0 0 12px}.muted{color:
 .group-label{color:#9eb4d0;font-size:11px;letter-spacing:.09em;font-weight:800;text-transform:uppercase;margin:20px 0 8px}
 .art{background:#15243a;padding:12px;border:1px solid #38516a;border-radius:12px;font-size:13px}
 .layerlist{display:grid;gap:8px}
+.artlist{display:grid;gap:8px;margin:12px 0 8px;max-height:305px;overflow:auto}
+.artentry{width:100%;display:flex;gap:9px;align-items:center;text-align:left;padding:9px;border-radius:12px;border:1px solid #30455f;background:#0a1728;color:#e2f1ff}
+.artentry.active{border-color:#58d2fb;background:#17314b}
+.artentry img{width:42px;height:50px;object-fit:cover;border-radius:5px;flex:none;background:#0a1020}
+.artentry strong{font-size:12px;display:block;overflow-wrap:anywhere}
+.artentry small{display:block;font-size:11px;color:#8fabcc;margin-top:4px}
+.art-commands{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.art-commands button{flex:1;min-width:80px;padding:9px}
+#createDialog .field{margin:12px 0}
+#createDialog{width:480px}
+#artCounter{margin-left:auto}
+
 .layer{display:flex;align-items:center;gap:9px;width:100%;padding:9px;background:#0b1525;color:#e0ebfa;border:1px solid #293e59;border-radius:12px;text-align:left}
 .layer.active{border-color:#67d4f5;box-shadow:0 0 0 1px #67d4f580;background:#142c42}
 .thumb{width:42px;height:48px;object-fit:contain;background:repeating-conic-gradient(#283953 0% 25%,#101e32 0% 50%) 50%/12px 12px;border-radius:6px}
@@ -74,8 +86,15 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="wrap">
 <aside class="panel">
 <h1>Mis cuadros</h1>
-<p class="muted">Trabajando con una obra de prueba. El catálogo admite más obras, pero todavía no hay publicación automática.</p>
+<p class="muted">Selecciona un cuadro para editar sus capas. Puedes crear varios diseños en el mismo proyecto.</p>
+<div class="artlist" id="artlist" aria-label="Lista de cuadros"></div>
+<div class="art-commands">
+<button id="newArt">+ Nuevo cuadro</button>
+<button id="cloneArt" class="subtle">Duplicar</button>
+<button id="deleteArt" class="danger">Eliminar</button>
+</div>
 <div class="art" id="artName">Cargando proyecto…</div>
+<div class="field" style="margin-top:11px"><label for="artTitle">Nombre del cuadro seleccionado</label><input id="artTitle" type="text" maxlength="100"></div>
 <div class="group-label">Capas · fondo → frente</div>
 <div class="layerlist" id="layerlist"></div>
 <div class="group-label">Añadir archivos</div>
@@ -119,6 +138,18 @@ dialog h2{font-size:21px;margin:0 0 8px}
 </aside>
 </div>
 <footer><div class="notice">El orden de las capas está definido desde el fondo hacia el frente. Al abrir la cámara AR, el visor recibe una copia temporal de esta configuración mediante el almacenamiento de sesión. Si agregas PNG grandes, el navegador podría limitar el tamaño del proyecto; descarga el JSON como respaldo.</div></footer>
+<dialog id="createDialog" aria-labelledby="createTitle">
+<h2 id="createTitle">Nuevo cuadro AR</h2>
+<p class="muted" id="createDescription">Registra una imagen única para el reconocimiento y al menos una capa PNG con transparencia.</p>
+<form id="createForm">
+<div class="field"><label for="createName">Nombre del cuadro</label><input id="createName" type="text" maxlength="100" placeholder="Ej. Paisaje espacial" required></div>
+<div class="field"><label for="createTarget">Imagen exacta que se imprimirá</label><input id="createTarget" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+<div class="field" id="createLayersField"><label for="createLayers">Capas PNG con fondo transparente</label><input id="createLayers" type="file" accept="image/png" multiple required></div>
+<p class="muted">Las capas deben tener la misma relación de aspecto que la imagen final. Se guardarán en tu borrador local; no se publican automáticamente.</p>
+<div class="dialog-buttons"><button type="submit" id="createConfirm">Crear cuadro</button><button type="button" class="subtle" id="cancelCreate">Cancelar</button></div>
+</form>
+<p class="muted" id="createStatus" role="status"></p>
+</dialog>
 <dialog id="shareDialog" aria-labelledby="shareTitle">
 <h2 id="shareTitle">Probar el cuadro en tu celular</h2>
 <p class="muted">Escanea este QR con la cámara del teléfono. Se abrirá el visor AR con los ajustes actuales de las capas. No necesitas cámara en el PC.</p>
@@ -134,31 +165,48 @@ dialog h2{font-size:21px;margin:0 0 8px}
   'use strict';
   var $=function(id){return document.getElementById(id);};
   var draftKey='visor222-editor-visual-v1';
-  var catalog=null, selectedId=null, busy=false;
+  var catalog=null, selectedId=null, selectedArtId=null, busy=false;
+  var creationMode='new';
   var shareURL='';
   var aspect=2047/1638;
   var controlIds=['name','posX','posY','depth','scale','rotation','opacity','animationType','amplitude','duration','visible'];
   function note(msg){$('status').textContent=msg;}
   function safeNumber(n, fallback){var v=Number(n);return Number.isFinite(v)?v:fallback;}
-  function selected(){return catalog&&catalog.cuadros[0].capas.find(function(l){return l.id===selectedId;});}
-  function article(){return catalog.cuadros[0];}
+  function article(){return catalog&&catalog.cuadros.find(function(a){return a.id===selectedArtId;});}
+  function selected(){var a=article();return a&&a.capas.find(function(l){return l.id===selectedId;});}
+  function setActiveArt(id){
+    var art=catalog.cuadros.find(function(a){return a.id===id;});
+    if(!art)return;
+    selectedArtId=id;selectedId=art.capas[0].id;render();
+  }
+  function reindex(){catalog.cuadros.forEach(function(a,i){a.targetIndex=i;});}
+  function newId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36);}
+
   function asset(src){return /^data:/i.test(src)?src:new URL(src,location.href).href;}
   function normalize(raw){
-    if(!raw||!Array.isArray(raw.cuadros)||!raw.cuadros[0]||!Array.isArray(raw.cuadros[0].capas))throw Error('El archivo JSON no contiene un cuadro válido.');
-    var art=raw.cuadros[0];
-    if(!art.imagenObjetivo)throw Error('Falta la imagen física de referencia.');
-    if(!art.capas.length)throw Error('El proyecto no tiene capas.');
-    var ids=new Set();
-    art.capas.forEach(function(l){
-      if(!l.id||!l.imagen||ids.has(l.id))throw Error('Cada capa debe tener ID e imagen únicos.');
-      ids.add(l.id);
-      l.ancho=safeNumber(l.ancho,1);l.alto=safeNumber(l.alto,aspect);
-      l.baseAncho=safeNumber(l.baseAncho,l.ancho);l.baseAlto=safeNumber(l.baseAlto,l.alto);
-      l.x=safeNumber(l.x,0);l.y=safeNumber(l.y,0);l.z=safeNumber(l.z,0);
-      l.rotation=safeNumber(l.rotation,0);
-      l.opacidad=safeNumber(l.opacidad,1);
-      l.visible=l.visible!==false;
-      l.animacion=l.animacion||{tipo:'ninguna',amplitud:0,duracionMs:2000};
+    if(!raw||!Array.isArray(raw.cuadros)||!raw.cuadros.length)throw Error('El proyecto debe contener al menos un cuadro.');
+    var artIds=new Set();
+    raw.cuadros.forEach(function(art,i){
+      if(!art.id||artIds.has(art.id)||!art.imagenObjetivo||!Array.isArray(art.capas)||!art.capas.length){
+        throw Error('Cada cuadro necesita ID único, imagen de referencia y al menos una capa.');
+      }
+      artIds.add(art.id);
+      var ratio=safeNumber(art.relacionAltoAncho,2047/1638);
+      if(ratio<=0||ratio>5)throw Error('Proporciones no válidas en el cuadro '+art.id);
+      art.relacionAltoAncho=ratio;
+      art.targetIndex=i;
+      var ids=new Set();
+      art.capas.forEach(function(l){
+        if(!l.id||!l.imagen||ids.has(l.id))throw Error('Cada capa debe tener ID e imagen únicos dentro de su cuadro.');
+        ids.add(l.id);
+        l.ancho=safeNumber(l.ancho,1);l.alto=safeNumber(l.alto,ratio);
+        l.baseAncho=safeNumber(l.baseAncho,l.ancho);l.baseAlto=safeNumber(l.baseAlto,l.alto);
+        l.x=safeNumber(l.x,0);l.y=safeNumber(l.y,0);l.z=safeNumber(l.z,0);
+        l.rotation=safeNumber(l.rotation,0);
+        l.opacidad=safeNumber(l.opacidad,1);
+        l.visible=l.visible!==false;
+        l.animacion=l.animacion||{tipo:'ninguna',amplitud:0,duracionMs:2000};
+      });
     });
     return raw;
   }
@@ -166,6 +214,21 @@ dialog h2{font-size:21px;margin:0 0 8px}
     if(!catalog)return;
     try{localStorage.setItem(draftKey,JSON.stringify(catalog));note('Borrador guardado en este navegador.');}
     catch(e){note('El navegador no tiene espacio para guardar todo. Descarga el JSON para conservar los cambios.');}
+  }
+  function drawArts(){
+    var list=$('artlist');list.replaceChildren();
+    catalog.cuadros.forEach(function(art,i){
+      var b=document.createElement('button');b.type='button';
+      b.className='artentry'+(art.id===selectedArtId?' active':'');
+      b.setAttribute('aria-pressed',String(art.id===selectedArtId));
+      var img=document.createElement('img');img.src=asset(art.imagenObjetivo);img.alt='';
+      var details=document.createElement('span');details.style.minWidth='0';
+      var name=document.createElement('strong');name.textContent=art.nombre||art.id;
+      var info=document.createElement('small');info.textContent='Cuadro '+(i+1)+' · '+art.capas.length+' capas';
+      details.append(name,info);b.append(img,details);
+      b.addEventListener('click',function(){setActiveArt(art.id);});
+      list.appendChild(b);
+    });
   }
   function drawList(){
     var list=$('layerlist');list.replaceChildren();
@@ -186,6 +249,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   function drawBoard(){
     var b=$('artboard');b.querySelectorAll('.layerplane').forEach(function(n){n.remove();});
     var art=article();aspect=safeNumber(art.relacionAltoAncho,aspect);
+    b.style.aspectRatio='1 / '+aspect;
     $('physical').src=asset(art.imagenObjetivo);$('physical').style.visibility=$('showBase').checked?'visible':'hidden';
     article().capas.forEach(function(l,index){
       if(l.visible===false)return;
@@ -238,7 +302,13 @@ dialog h2{font-size:21px;margin:0 0 8px}
     };
     Object.keys(values).forEach(function(id){$(id+'Val').textContent=values[id];});
   }
-  function render(){if(!catalog)return;$('artName').textContent=article().nombre||article().id;drawList();drawBoard();populate();}
+  function render(){
+    if(!catalog||!article())return;
+    $('artName').textContent=article().nombre||article().id;
+    $('artTitle').value=article().nombre||'';
+    drawArts();drawList();drawBoard();populate();
+    $('deleteArt').disabled=catalog.cuadros.length<2;
+  }
   function controlChanged(){
     var l=selected();if(!l)return;
     configureAmplitude();
@@ -252,6 +322,10 @@ dialog h2{font-size:21px;margin:0 0 8px}
   }
   controlIds.forEach(function(id){$(id).addEventListener('input',controlChanged);$(id).addEventListener('change',controlChanged);});
   ['showBase','showOutline','animatePreview'].forEach(function(id){$(id).addEventListener('change',drawBoard);});
+  $('artTitle').addEventListener('change',function(){
+    if(!article())return;
+    article().nombre=this.value.trim()||article().id;render();note('Nombre del cuadro actualizado en el borrador.');
+  });
   $('toBack').addEventListener('click',function(){move(-1);});
   $('toFront').addEventListener('click',function(){move(1);});
   function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
@@ -267,7 +341,10 @@ dialog h2{font-size:21px;margin:0 0 8px}
   $('importButton').addEventListener('click',function(){$('importFile').click();});
   $('importFile').addEventListener('change',async function(){
     var file=this.files[0];if(!file)return;
-    try{catalog=normalize(JSON.parse(await file.text()));selectedId=article().capas[0].id;render();persist();}
+    try{
+      catalog=normalize(JSON.parse(await file.text()));
+      selectedArtId=catalog.cuadros[0].id;selectedId=article().capas[0].id;render();persist();
+    }
     catch(e){note('No se pudo importar el proyecto: '+e.message);}
     this.value='';
   });
@@ -350,12 +427,17 @@ dialog h2{font-size:21px;margin:0 0 8px}
   });
   async function loadDefault(){
     try{var res=await fetch('./catalogo.json',{cache:'no-store'});if(!res.ok)throw Error('No se puede abrir catalogo.json');
-      catalog=normalize(await res.json());selectedId=article().capas[0].id;render();note('Cargado el cuadro del catálogo de desarrollo.');
+      catalog=normalize(await res.json());
+      selectedArtId=catalog.cuadros[0].id;selectedId=article().capas[0].id;
+      render();note('Catálogo de desarrollo cargado. Puedes añadir nuevos cuadros.');
     }catch(e){note('Error al abrir el catálogo: '+e.message);}
   }
   try{
     var saved=localStorage.getItem(draftKey);
-    if(saved){catalog=normalize(JSON.parse(saved));selectedId=article().capas[0].id;render();note('Recuperado tu borrador local.');}
+    if(saved){
+      catalog=normalize(JSON.parse(saved));selectedArtId=catalog.cuadros[0].id;
+      selectedId=article().capas[0].id;render();note('Recuperado tu borrador local con '+catalog.cuadros.length+' cuadro(s).');
+    }
     else loadDefault();
   }catch(err){localStorage.removeItem(draftKey);loadDefault();}
 })();

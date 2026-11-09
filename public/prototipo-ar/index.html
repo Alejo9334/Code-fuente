@@ -270,13 +270,38 @@
         '; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1'
     });
     scene.style.cssText='position:absolute; inset:0; width:100%; height:100%;';
-    var textures = [];
-    data.cuadros.forEach(function (art, index) {
+    var collections = new Map();
+    function ensureArtworkAssets(id) {
+      var collection=collections.get(id);
+      if(!collection) return Promise.reject(new Error('Cuadro desconocido: '+id));
+      if(!collection.promise) {
+        collection.promise=Promise.all(collection.textures.map(function(item){
+          return attachPng(item.plane,item.layer,item.order);
+        })).then(function(){collection.loaded=true;}).catch(function(err){
+          collection.promise=null;
+          console.error('No se pudieron cargar las capas de '+collection.art.nombre,err);
+          throw err;
+        });
+      }
+      return collection.promise;
+    }
+    data.cuadros.forEach(function(art) {
       var target=element('a-entity', {'mindar-image-target': 'targetIndex: ' + art.targetIndex});
+      var group={art:art,textures:[],promise:null,loaded:false};
+      collections.set(art.id,group);
       target.addEventListener('targetFound', function () {
         tracked.add(art.id);
         document.body.classList.add('detected');
-        say('Experiencia activa: ' + art.nombre, 'Cuadro reconocido');
+        if(!group.loaded) {
+          say('Cuadro reconocido. Cargando sus capas PNG: '+art.nombre,'Cargando capas');
+          ensureArtworkAssets(art.id).then(function(){
+            if(tracked.has(art.id))say('Experiencia activa: '+art.nombre,'Cuadro reconocido');
+          }).catch(function(){
+            say('No se pudieron cargar las capas de '+art.nombre+'. Comprueba la conexión.','Error de PNG');
+          });
+        } else {
+          say('Experiencia activa: '+art.nombre,'Cuadro reconocido');
+        }
       });
       target.addEventListener('targetLost', function () {
         tracked.delete(art.id);
@@ -285,33 +310,34 @@
           say('Mueve suavemente la cámara hasta encontrar un cuadro registrado.', 'Buscando cuadro');
         }
       });
-      art.capas.forEach(function (layer, layerIndex) {
-        if (layer.visible === false) return;
-        var plane = createPlane(layer);
+      art.capas.forEach(function (layer,layerIndex) {
+        if(layer.visible===false)return;
+        var plane=createPlane(layer);
         target.appendChild(plane);
-        textures.push({plane:plane,layer:layer,order:layerIndex+1});
+        group.textures.push({plane:plane,layer:layer,order:layerIndex+1});
       });
       scene.appendChild(target);
     });
     scene.appendChild(element('a-camera', {position:'0 0 0', 'look-controls':'enabled: false'}));
-    var sceneLoaded = new Promise(function(resolve) {
+    var sceneLoaded=new Promise(function(resolve){
       scene.addEventListener('loaded',resolve,{once:true});
     });
     stage.appendChild(scene);
-    assetsPromise = sceneLoaded.then(async function() {
-      say('Cargando ' + textures.length + ' capas PNG…', 'Cargando PNG');
-      await Promise.all(textures.map(function(item) {
-        return attachPng(item.plane,item.layer,item.order);
-      }));
+    assetsPromise=sceneLoaded.then(async function(){
+      // Con varios cuadros solo se precargan los PNG de la primera obra.
+      // El resto se carga al reconocerlo, reduciendo datos y memoria inicial.
+      var first=data.cuadros[0];
+      say('Preparando capas iniciales de '+first.nombre+'…','Preparando PNG');
+      await ensureArtworkAssets(first.id);
       texturesReady=true;
       ready=true;
       startButton.disabled=false;
-      say('Capas PNG cargadas correctamente. Pulsa activar cámara.', 'Listo');
+      say('Reconocimiento optimizado listo. Activa la cámara.','Listo');
     });
-    assetsPromise.catch(function(err) {
+    assetsPromise.catch(function(err){
       console.error(err);
-      say('Error de texturas: ' + err.message, 'Error PNG');
-      count.textContent = err.message;
+      say('Error cargando PNG iniciales: '+err.message,'Error PNG');
+      count.textContent=err.message;
     });
   }
 

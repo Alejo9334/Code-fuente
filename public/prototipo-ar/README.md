@@ -1,42 +1,43 @@
-# Visor-222 v2 — prototipo de múltiples cuadros
+# Visor-222 · Prototipo multimarcador (rama de desarrollo)
 
-Esta carpeta es una prueba técnica aislada de la aplicación publicada. No contiene un editor privado ni una plataforma de cuentas.
+Esta versión está en la rama `desarrollo/multicuadros-ar-v2`. **No reemplaza ni publica sobre la rama `main`**.
 
-## Objetivo
-Abrir una cámara en el navegador, detectar qué cuadro físico se está viendo y mostrar únicamente las capas PNG de ese cuadro, como superficies planas colocadas a distintas profundidades. Cada capa admite su propia animación.
+## Primer cuadro del usuario: Minecraft Creeper Graffiti
+
+El usuario proporcionó seis imágenes originales de **1638 × 2047 píxeles**:
+- Archivos 1, 2, 3, 4 y 5: capas PNG con transparencia.
+- Archivo 6: imagen final exacta que se imprimirá, usada como objetivo de seguimiento.
+- Orden de profundidad, de atrás hacia delante: 5 → 4 → 3 → 2 → 1.
+- La separación de profundidad inicial (`z`) es: 0.015, 0.030, 0.050, 0.075, 0.105.
+- Cada capa tiene animación independiente (flotación o pulso discreto).
+
+## Herramienta para incorporar el cuadro sin editar código
+
+Abrir `crear-cuadro.html` desde el sitio de pruebas servido por HTTPS.
+
+1. Seleccionar la **imagen 6** donde se indica «Imagen 6 · referencia exacta que se imprime».
+2. Seleccionar las **imágenes 1 a 5** en sus controles correspondientes, manteniendo los PNG con transparencia.
+3. Pulsar **Actualizar vista previa**.
+4. Comprobar que la composición y el orden de capas son correctos.
+5. Pulsar **Probar con la cámara**. El editor pasa el catálogo temporal al visor usando `sessionStorage`; el visor compila la imagen objetivo con MindAR y activa la cámara tras pulsar «Activar cámara».
+6. Apuntar la cámara a una copia **impresa o mostrada en otra pantalla** de la imagen 6.
+
+El navegador reduce las seis imágenes a un ancho de 768 px para la prueba; no modifica los archivos originales. No se envían a un servidor.
+
+**Limitación deliberada:** la carga local no publica los PNG para otros clientes ni los almacena en GitHub. La publicación definitiva necesitará subir los archivos estáticos y precompilar un archivo `.mind` (o incorporar almacenamiento persistente y un editor privado).
 
 ## Archivos
-- `index.html`: visor público sin herramientas de edición.
-- `catalogo.json`: catálogo declarativo de imágenes y capas.
 
-## Prueba inicial
-El catálogo incluye **una referencia de demostración**, porque todavía no hay imágenes reales de los cuadros del negocio. El reconocimiento de esa imagen usa la tarjeta oficial de ejemplo de MindAR:
-https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png
+- `index.html`: visor público de prueba con motor MindAR. Usa `catalogo.json` en modo normal, o el catálogo temporal del editor con `?local=1`.
+- `crear-cuadro.html`: formulario de carga local, composición 2D y envío del catálogo al visor.
+- `catalogo.json`: demostración preexistente, mientras el primer cuadro real se prueba localmente.
 
-Se muestran dos capas PNG transparentes generadas por el visor para validar la superposición, profundidad y animaciones. **Esta demostración de un solo cuadro no valida aún reconocimiento simultáneo de varios cuadros reales.**
+## Próximos hitos
 
-Abre la página en un celular con HTTPS, pulsa *Activar cámara* y apunta la cámara a la tarjeta oficial mostrada en otra pantalla o impresa.
+- Verificar en Android y iPhone permisos de cámara, estabilidad del seguimiento y animaciones.
+- Añadir una segunda y tercera imagen real al catálogo y probar reconocimiento multimarcador.
+- Convertir las capas PNG y el archivo `.mind` a activos estáticos de producción.
+- Construir administración con autenticación real y permisos del lado del servidor.
+- Preparar vista previa HTTPS separada de la publicación pública actual.
 
-## Agregar múltiples cuadros
-1. Recopilar las imágenes **exactas** que se imprimen en los cuadros.
-2. Compilar TODAS las imágenes juntas, en un orden fijo, con el compilador de imágenes MindAR: https://hiukim.github.io/mind-ar-js-doc/tools/compile/
-3. Publicar el archivo `.mind` resultante bajo `public/prototipo-ar/targets/cuadros.mind` (por ejemplo).
-4. Cambiar `archivoMind` en `catalogo.json` a `./targets/cuadros.mind`.
-5. Agregar un registro en `cuadros` por imagen **en el mismo orden** que se usó al compilar: `targetIndex` empieza en 0 y no puede repetirse.
-6. Guardar las imágenes PNG transparentes como archivos estáticos y referenciarlas desde `imagen`, por ejemplo `./capas/cuadro-001/hojas.png`.
-7. Definir `x`, `y` (centro de imagen), `z` (distancia perpendicular al cuadro), `ancho`, `alto` en las unidades del marcador MindAR. El marcador mide 1 de ancho en estas unidades. Valores de `z` entre 0.01 y 0.12 son un punto de partida, no una medida física exacta.
-8. Para `animacion.tipo`, usar `flotar`, `pulso`, `girar` o dejarlo sin animación. `amplitud` representa unidades del marcador (flotar), escala relativa (pulso) o grados (girar). `duracionMs` se aplica por capa.
-
-El visor crea un ancla de seguimiento distinta para cada `targetIndex`. Sus capas se muestran únicamente si MindAR reconoce la imagen correspondiente.
-
-## Limitaciones de esta etapa
-- Para añadir imágenes reales se requiere compilar el archivo .mind y subir los archivos del catálogo. El editor visual y la publicación desde el navegador vendrán después.
-- No hay inicio de sesión ni control de permisos todavía. **No usar esta carpeta para almacenar material privado**.
-- GitHub Pages ofrece archivos estáticos; no es una base de datos de cuentas ni un panel de publicación seguro.
-- Se requieren HTTPS, permiso de cámara y un navegador compatible.
-- Las animaciones y posiciones deben comprobarse sobre cuadros impresos reales.
-- El rendimiento con muchas imágenes de referencia requiere pruebas en Android y iOS. Si el catálogo crece demasiado, se dividirán imágenes en grupos descargables.
-- Los scripts A-Frame y MindAR se cargan desde CDN. Para una versión comercial estable se evaluará alojarlos de forma controlada.
-
-## Publicación
-Esta rama `desarrollo/multicuadros-ar-v2` no reemplaza el contenido de la rama `main`. La URL de GitHub Pages existente continúa publicando la aplicación actual. Para probar esta versión antes de fusionar, se necesitará desplegar una vista previa aislada o ejecutar localmente.
+GitHub Pages es hosting estático. Una rama de desarrollo no está alojada automáticamente en Pages; estas páginas necesitan una vista previa separada para probar la cámara.

@@ -102,3 +102,17 @@ if(catalogFast.archivoMind){
 assert.ok(viewer.includes('ensureArtworkAssets'),'El visor debería cargar las capas por cuadro cuando sean reconocidas');
 assert.ok(viewer.includes("method:'HEAD'"),'El visor no verifica la existencia del .mind');
 console.log('Reconocimiento rápido y carga diferida de PNG validados');
+
+const optimized=JSON.parse(fs.readFileSync('public/prototipo-ar/optimizacion-imagenes.json','utf8'));
+assert.ok(optimized.totalOriginal>=optimized.totalServido,'Las imágenes optimizadas no deben pesar más');
+for(const record of optimized.imagenes){
+  const local='public/prototipo-ar/'+record.usado.replace(/^\.\//,'');
+  const original='public/prototipo-ar/'+record.original.replace(/^\.\//,'');
+  assert.ok(fs.existsSync(local),'No existe archivo optimizado: '+local);
+  assert.ok(fs.existsSync(original),'No se conservó PNG original: '+original);
+  assert.ok(record.bytesOptimizado<=record.bytesOriginal,'No debe usar una alternativa más pesada');
+  assert.ok(record.transparencia,'Las capas del cuadro Creeper deben conservar transparencia');
+}
+const validLayers=new Set(catalogFast.cuadros.flatMap(a=>a.capas.map(l=>l.imagen)));
+for(const record of optimized.imagenes)assert.ok(validLayers.has(record.usado),'La capa optimizada debe estar referenciada en catálogo');
+console.log('Optimización AR verificada: '+optimized.ahorroPorcentaje+'% de ahorro de descarga sin borrar PNG originales');

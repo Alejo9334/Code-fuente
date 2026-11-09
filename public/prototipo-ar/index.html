@@ -73,6 +73,8 @@
   var tracked = new Set();
   var catalog = null;
   var generatedMindUrl = null;
+  var texturesReady = false;
+  var assetsPromise = null;
 
   function say(text, short) {
     message.textContent = text;
@@ -139,18 +141,16 @@
     return source;
   }
 
-  function createPlane(layer, assetId) {
+  function createPlane(layer) {
     var x = Number(layer.x || 0), y = Number(layer.y || 0), z = Number(layer.z || 0);
     var w = Number(layer.ancho || 1), h = Number(layer.alto || 1);
     if (![x,y,z,w,h].every(Number.isFinite) || w <= 0 || h <= 0) throw new Error('Medidas de capa no válidas');
     var alpha = Number(layer.opacidad === undefined ? 1 : layer.opacidad);
     var position = [x,y,z].join(' ');
-    var plane = element('a-plane', {
-      position: position,
-      width: String(w),
-      height: String(h),
-      material: 'shader: flat; src: #' + assetId + '; transparent: true; opacity: ' + Math.max(0,Math.min(1,alpha)) + '; alphaTest: 0.01; depthWrite: false; side: double'
-    });
+    // Las texturas se adjuntan con THREE directamente, evitando que A-Frame
+    // muestre un material blanco mientras intenta resolver #asset-id.
+    var plane = element('a-entity', { position: position });
+    plane.userDataLayer = { w: w, h: h, alpha: Math.max(0,Math.min(1,alpha)) };
     var anim = layer.animacion || {};
     var amp = Number(anim.amplitud || 0);
     var dur = Math.max(350, Number(anim.duracionMs || 1800));
@@ -162,6 +162,43 @@
       plane.setAttribute('animation__girar', 'property: rotation; from: 0 0 0; to: 0 0 ' + amp + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
     }
     return plane;
+  }
+
+  // Cargar imágenes reales de forma explícita ANTES de habilitar la cámara.
+  // Esto garantiza que no existan planos sin textura.
+  async function attachPng(plane, layer, order) {
+    var src = assetSource(layer.imagen);
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    var absoluteUrl = /^data:/i.test(src) ? src : new URL(src, location.href).href;
+    await new Promise(function(resolve,reject) {
+      img.onload = function(){resolve();};
+      img.onerror = function(){reject(new Error('No se pudo cargar la capa PNG: ' + layer.nombre));};
+      img.src = absoluteUrl;
+    });
+    if (typeof img.decode === 'function') {
+      try { await img.decode(); } catch(err) { /* onload ya confirmó los píxeles */ }
+    }
+    var THREE = AFRAME.THREE;
+    var texture = new THREE.Texture(img);
+    texture.needsUpdate = true;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.flipY = true;
+    var material = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: 0xffffff,
+      transparent: true,
+      opacity: plane.userDataLayer.alpha,
+      alphaTest: 0.01,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    });
+    var geometry = new THREE.PlaneGeometry(plane.userDataLayer.w,plane.userDataLayer.h);
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = order;
+    plane.setObject3D('mesh',mesh);
+    return true;
   }
 
   function loadTarget(src) {
@@ -216,7 +253,7 @@
         '; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1'
     });
     scene.style.cssText='position:absolute; inset:0; width:100%; height:100%;';
-    var assets=element('a-assets', {timeout: '20000'});
+    var textures = [];
     data.cuadros.forEach(function (art, index) {
       var target=element('a-entity', {'mindar-image-target': 'targetIndex: ' + art.targetIndex});
       target.addEventListener('targetFound', function () {
@@ -232,25 +269,36 @@
         }
       });
       art.capas.forEach(function (layer, layerIndex) {
-        var id='asset-' + index + '-' + layerIndex;
-        var image=element('img', {id:id, src:assetSource(layer.imagen), crossorigin:'anonymous'});
-        assets.appendChild(image);
-        target.appendChild(createPlane(layer,id));
+        var plane = createPlane(layer);
+        target.appendChild(plane);
+        textures.push({plane:plane,layer:layer,order:layerIndex+1});
       });
       scene.appendChild(target);
     });
-    scene.insertBefore(assets,scene.firstChild);
     scene.appendChild(element('a-camera', {position:'0 0 0', 'look-controls':'enabled: false'}));
+    var sceneLoaded = new Promise(function(resolve) {
+      scene.addEventListener('loaded',resolve,{once:true});
+    });
     stage.appendChild(scene);
-    scene.addEventListener('loaded', function () {
+    assetsPromise = sceneLoaded.then(async function() {
+      say('Cargando ' + textures.length + ' capas PNG…', 'Cargando PNG');
+      await Promise.all(textures.map(function(item) {
+        return attachPng(item.plane,item.layer,item.order);
+      }));
+      texturesReady=true;
       ready=true;
       startButton.disabled=false;
-      status.textContent='Listo';
+      say('Capas PNG cargadas correctamente. Pulsa activar cámara.', 'Listo');
+    });
+    assetsPromise.catch(function(err) {
+      console.error(err);
+      say('Error de texturas: ' + err.message, 'Error PNG');
+      count.textContent = err.message;
     });
   }
 
   async function start() {
-    if (!ready || !scene) return;
+    if (!ready || !texturesReady || !scene) return;
     if (!window.isSecureContext) { say('La cámara requiere HTTPS o localhost.', 'HTTPS requerido'); return; }
     startButton.disabled=true;
     say('Abriendo cámara…', 'Iniciando');

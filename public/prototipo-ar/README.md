@@ -41,3 +41,18 @@ El navegador reduce las seis imágenes a un ancho de 768 px para la prueba; no m
 - Preparar vista previa HTTPS separada de la publicación pública actual.
 
 GitHub Pages es hosting estático. Una rama de desarrollo no está alojada automáticamente en Pages; estas páginas necesitan una vista previa separada para probar la cámara.
+
+
+## Editor visual de capas (nuevo)
+
+Abrir `editor.html` en la vista previa HTTPS. Se carga directamente el catálogo existente con el cuadro Creeper y sus cinco PNG. Permite:
+
+- Seleccionar capas, cambiar su posición X/Y, profundidad Z, escala, opacidad, visibilidad, rotación estática y orden fondo/frente.
+- Elegir una animación independiente por capa: ninguna, flotar, pulso o girar; ajustar amplitud y duración.
+- Ver una previsualización aproximada en 2D con las mismas imágenes PNG.
+- Agregar capas PNG conservando su transparencia o cambiar la imagen física de referencia.
+- Guardar un borrador en el navegador (`localStorage`), importar/exportar un JSON y probar la configuración en cámara mediante `sessionStorage`.
+
+**La visualización 2D no reproduce exactamente la perspectiva AR:** los cambios de profundidad deben comprobarse con el visor desde el teléfono.
+
+**Este no es todavía un panel administrativo seguro ni un sistema de publicación:** abrir `editor.html` no requiere iniciar sesión, los cambios no actualizan los archivos del repositorio ni se publican para los clientes. Nunca usarlo para subir contenido privado. El siguiente hito comercial será autenticación y almacenamiento persistente con permisos adecuados.

@@ -1,0 +1,58 @@
+name: Compilar reconocimiento AR anticipado
+
+on:
+  push:
+    branches:
+      - desarrollo/multicuadros-ar-v2
+    paths:
+      - scripts/compilar-objetivos-ar.mjs
+      - .github/workflows/compilar-ar.yml
+      - public/prototipo-ar/catalogo.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilar-reconocimiento-ar
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Obtener rama de desarrollo
+        uses: actions/checkout@v4
+        with:
+          ref: desarrollo/multicuadros-ar-v2
+      - name: Instalar Node compatible con canvas
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar compilador AR aislado
+        run: |
+          mkdir -p .ar-tools
+          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5
+          cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
+      - name: Compilar las referencias y generar targets.mind
+        run: node .ar-tools/compilar.mjs
+      - name: Verificar archivo precompilado
+        run: |
+          test -s public/prototipo-ar/targets.mind
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
+          if(d.archivoMind!=='./targets.mind'||d.compilador.cantidadObjetivos!==d.cuadros.length)throw Error('Archivo incompatible');
+          "
+      - name: Publicar SOLO el archivo .mind y catálogo en desarrollo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- public/prototipo-ar/catalogo.json public/prototipo-ar/targets.mind
+          if git diff --cached --quiet; then
+            echo "Objetivos AR sin cambios"
+          else
+            git commit -m "Optimizar reconocimiento AR con targets.mind precompilado"
+            git push origin HEAD:desarrollo/multicuadros-ar-v2
+          fi

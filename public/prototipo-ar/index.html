@@ -329,6 +329,45 @@
   stopButton.addEventListener('click', stop);
   window.addEventListener('pagehide', function () { if(scene && scene.systems['mindar-image-system']) scene.systems['mindar-image-system'].stop(); if(generatedMindUrl) URL.revokeObjectURL(generatedMindUrl); });
 
+  // El QR lleva únicamente los parámetros de capa. Los PNG siempre se
+  // cargan de los archivos ya publicados; no se transmiten imágenes privadas.
+  function applySharedPreview(data, code) {
+    if(!code || code.length>4000 || !/^[A-Za-z0-9_-]+$/.test(code)) {
+      throw new Error('El enlace QR no es válido.');
+    }
+    var raw = atob(code.replace(/-/g,'+').replace(/_/g,'/'));
+    var packet = JSON.parse(raw);
+    if(!Array.isArray(packet) || packet[0]!==1 || typeof packet[1]!=='string' || !Array.isArray(packet[2])) {
+      throw new Error('Formato de vista previa no reconocido.');
+    }
+    var art=data.cuadros.find(function(x){return x.id===packet[1];});
+    if(!art)throw new Error('Este cuadro no está registrado en la vista previa.');
+    if(packet[2].length>art.capas.length || packet[2].length===0)throw new Error('Cantidad de capas incompatible.');
+    var registry=new Map(art.capas.map(function(l){return [l.id,l];}));
+    var seen=new Set(), types=['ninguna','flotar','pulso','girar'];
+    var layers=packet[2].map(function(row){
+      if(!Array.isArray(row) || row.length!==12 || !registry.has(row[0]) || seen.has(row[0])) {
+        throw new Error('El enlace contiene capas desconocidas o repetidas.');
+      }
+      seen.add(row[0]);
+      var valid=row.slice(1);
+      if(valid.some(function(v){return typeof v!=='number' || !Number.isFinite(v);}))throw new Error('Parámetros de capa inválidos.');
+      var x=row[1],y=row[2],z=row[3],w=row[4],h=row[5],rotation=row[6],alpha=row[7],visible=row[8],type=row[9],amp=row[10],dur=row[11];
+      if(Math.abs(x)>1 || Math.abs(y)>1 || z<0 || z>1 || w<=0 || w>3 || h<=0 || h>4 ||
+         Math.abs(rotation)>360 || alpha<0 || alpha>1 || (visible!==0&&visible!==1) ||
+         !Number.isInteger(type) || type<0 || type>3 || amp<0 || amp>90 || dur<350 || dur>20000) {
+        throw new Error('El enlace contiene valores fuera de rango.');
+      }
+      var l=Object.assign({},registry.get(row[0]));
+      l.x=x;l.y=y;l.z=z;l.ancho=w;l.alto=h;l.rotation=rotation;
+      l.opacidad=alpha;l.visible=!!visible;
+      l.animacion={tipo:types[type],amplitud:amp,duracionMs:dur};
+      return l;
+    });
+    art.capas=layers;
+    return data;
+  }
+
   var useLocal = new URLSearchParams(location.search).get('local') === '1';
   var catalogPromise = useLocal
     ? Promise.resolve().then(function(){
@@ -342,8 +381,13 @@
 
   catalogPromise
     .then(async function(data){
+      var share=new URLSearchParams(location.search).get('share');
+      if(share) {
+        data=applySharedPreview(data,share);
+        say('Configuración de capas recibida desde el editor del PC.', 'Vista previa QR');
+      }
       catalog=validCatalog(data);
-      count.textContent=data.cuadros.length + (data.cuadros.length===1?' cuadro registrado':' cuadros registrados') + ' · Sin QR';
+      count.textContent=data.cuadros.length + (data.cuadros.length===1?' cuadro registrado':' cuadros registrados') + ' · Sin QR' + (share?' · Ajustes del PC':'');
       await prepareScene(data);
     })
     .catch(function(err) {

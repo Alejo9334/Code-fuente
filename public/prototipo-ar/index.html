@@ -175,10 +175,13 @@
 
   async function compileLocalTargets(data) {
     var attempts = 0;
-    while (!(window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) && attempts < 50) {
+    function getCompiler() {
+      return window.MINDAR && (window.MINDAR.Compiler || (window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler));
+    }
+    while (!getCompiler() && attempts < 60) {
       await new Promise(function(resolve){setTimeout(resolve,200);}); attempts++;
     }
-    if (!(window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler)) {
+    if (!getCompiler()) {
       throw new Error('El compilador MindAR no está disponible.');
     }
     var sorted = data.cuadros.slice().sort(function(a,b){return a.targetIndex-b.targetIndex;});
@@ -188,7 +191,7 @@
     say('Preparando imágenes de reconocimiento…', 'Preparando');
     var images = await Promise.all(sorted.map(function(art){return loadTarget(art.imagenObjetivo);}));
     say('Analizando las imágenes de los cuadros…', 'Compilando');
-    var compiler = new window.MINDAR.IMAGE.Compiler();
+    var compiler = new (getCompiler())();
     await compiler.compileImageTargets(images, function(progress){
       say('Compilando imágenes de reconocimiento: '+Math.round(progress)+'%', 'Compilando');
     });

@@ -21,7 +21,7 @@ for (const required of ['posX','posY','depth','scale','rotation','opacity','anim
   assert.ok(editor.includes(required), 'Falta función de editor: '+required);
 }
 const viewer=fs.readFileSync('public/prototipo-ar/index.html','utf8');
-assert.ok(viewer.includes('layer.visible === false'), 'El visor debe respetar la visibilidad');
+assert.ok(/layer\.visible\s*===\s*false/.test(viewer), 'El visor debe respetar la visibilidad');
 assert.ok(viewer.includes('layer.rotation || 0'), 'El visor debe respetar la rotación');
 console.log('Editor y visor compatibles: parámetros de capas verificados');
 
@@ -93,3 +93,12 @@ for(const required of ['row level security','visor222_admins','visor222_admin_pr
 }
 assert.ok(!authScript.includes('service_role'),'Nunca debe usarse la clave service_role en el navegador');
 console.log('Autenticación Supabase, verificación admin y reglas RLS incluidas');
+
+const catalogFast=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
+if(catalogFast.archivoMind){
+  assert.ok(fs.existsSync('public/prototipo-ar/targets.mind'),'El archivo de reconocimiento compilado falta');
+  assert.equal(catalogFast.compilador?.cantidadObjetivos,catalogFast.cuadros.length,'El número de objetivos compilados debe coincidir');
+}
+assert.ok(viewer.includes('ensureArtworkAssets'),'El visor debería cargar las capas por cuadro cuando sean reconocidas');
+assert.ok(viewer.includes("method:'HEAD'"),'El visor no verifica la existencia del .mind');
+console.log('Reconocimiento rápido y carga diferida de PNG validados');

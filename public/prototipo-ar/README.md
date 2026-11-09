@@ -79,3 +79,26 @@ El editor visual (`editor.html`) ya incluye una lista de cuadros con **Nuevo cua
 La lista de cuadros es **un administrador local de prototipo**, todavía no una biblioteca sincronizada ni un panel con control de acceso. Los cambios no alteran `main` ni la publicación comercial. Para usar nuevas imágenes con clientes, habrá que añadir almacenamiento, compilación y publicación persistente seguros.
 
 **Importante:** los PNG que se importan desde archivos pueden superar la cuota del navegador. Exporta el JSON con frecuencia; no confíes solo en el almacenamiento local.
+
+## Autenticación privada del administrador (requiere activación con Supabase)
+
+Se incorporaron `login.html`, `auth-config.js`, `admin-auth.js` y `supabase-admin.sql`. **El editor está bloqueado por defecto y el visor AR público permanece disponible.** No hay contraseñas incrustadas en HTML.
+
+### Pasos para activar
+
+1. Crea un proyecto en [Supabase](https://supabase.com/dashboard) con una contraseña segura para tu cuenta.
+2. Abre **SQL Editor** y ejecuta `supabase-admin.sql`. Esto crea las tablas `visor222_admins` y `visor222_admin_projects` con Row Level Security (RLS).
+3. En **Authentication → Settings** o en la configuración de Auth, desactiva **Allow new users to sign up**. Así solo podrán entrar cuentas creadas o invitadas por ti.
+4. En **Authentication → Users**, crea tu usuario administrador con correo y contraseña (o invita al usuario y completa la confirmación). Copia su **User UID**.
+5. En Supabase **SQL Editor**, ejecuta: `insert into public.visor222_admins(user_id) values ('UUID-REAL-DE-TU-CUENTA');` sustituyendo el UUID. Solo tú, con acceso a la consola, puedes otorgar ese permiso.
+6. En **Project Settings → API Keys / Data API**, copia únicamente la **Project URL** y la clave pública **publishable** (o legacy **anon**).
+7. En la rama de desarrollo cambia exclusivamente `public/prototipo-ar/auth-config.js`, colocando esos dos valores públicos. **NUNCA** compartas ni incluyas una `service_role` o `secret key`, tu contraseña o tokens privados.
+8. Publica nuevamente Visor-222 Preview y abre `login.html`. Ingresa con el administrador autorizado.
+
+El editor verifica la sesión con `getUser()` y consulta la tabla `visor222_admins`; sólo un administrador autorizado puede utilizar los controles de edición y realizar lecturas/escrituras de `visor222_admin_projects`. Los datos de proyectos guardados en la nube están protegidos **en Supabase** mediante políticas RLS, no por una contraseña del navegador. Un proyecto se guarda/carga desde los botones «Guardar en nube privada» y «Cargar desde nube».
+
+**Limitación de GitHub Pages:** cualquier persona puede descargar el código HTML, CSS y JavaScript publicados e incluso los recursos PNG públicos. La interfaz solo aparece después de verificar la cuenta, pero esto **no** es un servidor web privado ni oculta los recursos estáticos. La protección efectiva es para las operaciones y los datos guardados en Supabase. Los clientes siguen entrando a `index.html` sin autenticarse.
+
+**Estado actual:** sin la URL y clave pública de tu propio proyecto Supabase, `login.html` mostrará «autenticación no configurada», no permitirá iniciar sesión y `editor.html` redirigirá al login. Es intencional: no se habilita ninguna contraseña ficticia o alternativa insegura.
+
+En producción considera habilitar MFA, una política de contraseñas fuerte, recuperación de cuenta con SMTP propio y un dominio privado con control de acceso perimetral para evitar que el HTML del editor pueda descargarse.

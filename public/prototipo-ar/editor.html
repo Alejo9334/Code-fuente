@@ -295,6 +295,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     return url.href;
   }
   $('shareAR').addEventListener('click',function(){
+    shareURL='';
     try {
       shareURL=makeShareURL();
       var container=$('qrCanvas');container.replaceChildren();

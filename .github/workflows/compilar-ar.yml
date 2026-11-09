@@ -54,5 +54,11 @@ jobs:
             echo "Objetivos AR sin cambios"
           else
             git commit -m "Optimizar reconocimiento AR con targets.mind precompilado"
-            git push origin HEAD:desarrollo/multicuadros-ar-v2
+            for intento in 1 2 3; do
+              git fetch origin desarrollo/multicuadros-ar-v2
+              git rebase FETCH_HEAD
+              if git push origin HEAD:desarrollo/multicuadros-ar-v2; then exit 0; fi
+            done
+            echo "No se pudo integrar la compilación tras tres intentos" >&2
+            exit 1
           fi

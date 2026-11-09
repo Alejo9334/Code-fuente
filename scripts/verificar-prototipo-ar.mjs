@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html']) {
+for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html', 'public/prototipo-ar/optimizar.html']) {
   const html = fs.readFileSync(filename, 'utf8');
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
   assert.ok(scripts.length > 0, filename + ' must include a script');
@@ -116,3 +116,13 @@ for(const record of optimized.imagenes){
 const validLayers=new Set(catalogFast.cuadros.flatMap(a=>a.capas.map(l=>l.imagen)));
 for(const record of optimized.imagenes)assert.ok(validLayers.has(record.usado),'La capa optimizada debe estar referenciada en catálogo');
 console.log('Optimización AR verificada: '+optimized.ahorroPorcentaje+'% de ahorro de descarga sin borrar PNG originales');
+
+const compressionReport=JSON.parse(fs.readFileSync('public/prototipo-ar/optimizacion-imagenes.json','utf8'));
+assert.ok(compressionReport.imagenes.length>0,'Debe haber capas optimizadas');
+for(const img of compressionReport.imagenes){
+  assert.ok(img.bytesOptimizado<=img.bytesOriginal,'La capa optimizada no puede ser más pesada');
+  assert.ok(img.transparencia,'No debe perderse la transparencia del PNG');
+}
+const optimizationView=fs.readFileSync('public/prototipo-ar/optimizar.html','utf8');
+assert.ok(optimizationView.includes('optimizacion-imagenes.json'),'Falta informe de ahorro visual');
+console.log('Vista de ahorro de imágenes y sus cifras verificada');

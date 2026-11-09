@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "cuadros": 1,
+  "totalOriginal": 4075514,
+  "totalServido": 1154142,
+  "imagenes": [
+    {
+      "original": "./capa-5.png.png",
+      "usado": "./capa-5.png.optimized.webp",
+      "ancho": 2200,
+      "alto": 2750,
+      "transparencia": true,
+      "bytesOriginal": 363732,
+      "bytesOptimizado": 170142,
+      "ahorroPorcentaje": 53.2,
+      "metodo": "sin pérdida"
+    },
+    {
+      "original": "./capa-4.png.png",
+      "usado": "./capa-4.png.optimized.webp",
+      "ancho": 2200,
+      "alto": 2750,
+      "transparencia": true,
+      "bytesOriginal": 342064,
+      "bytesOptimizado": 152750,
+      "ahorroPorcentaje": 55.3,
+      "metodo": "sin pérdida"
+    },
+    {
+      "original": "./capa-3.png.png",
+      "usado": "./capa-3.png.optimized.webp",
+      "ancho": 2200,
+      "alto": 2750,
+      "transparencia": true,
+      "bytesOriginal": 377163,
+      "bytesOptimizado": 180230,
+      "ahorroPorcentaje": 52.2,
+      "metodo": "calidad 93/100"
+    },
+    {
+      "original": "./capa-2.png.png",
+      "usado": "./capa-2.png.optimized.webp",
+      "ancho": 2200,
+      "alto": 2750,
+      "transparencia": true,
+      "bytesOriginal": 2801899,
+      "bytesOptimizado": 594540,
+      "ahorroPorcentaje": 78.8,
+      "metodo": "calidad 93/100"
+    },
+    {
+      "original": "./capa-1.png.png",
+      "usado": "./capa-1.png.optimized.webp",
+      "ancho": 2200,
+      "alto": 2750,
+      "transparencia": true,
+      "bytesOriginal": 190656,
+      "bytesOptimizado": 56480,
+      "ahorroPorcentaje": 70.4,
+      "metodo": "calidad 93/100"
+    }
+  ],
+  "ahorroPorcentaje": 71.7
+}

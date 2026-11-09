@@ -13,7 +13,7 @@
         {
           "id": "capa-5",
           "nombre": "Salpicaduras amarillas",
-          "imagen": "./capa-5.png.png",
+          "imagen": "./capa-5.png.optimized.webp",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,
@@ -31,7 +31,7 @@
         {
           "id": "capa-4",
           "nombre": "Graffiti y símbolos",
-          "imagen": "./capa-4.png.png",
+          "imagen": "./capa-4.png.optimized.webp",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,
@@ -49,7 +49,7 @@
         {
           "id": "capa-3",
           "nombre": "Game Over",
-          "imagen": "./capa-3.png.png",
+          "imagen": "./capa-3.png.optimized.webp",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,
@@ -67,7 +67,7 @@
         {
           "id": "capa-2",
           "nombre": "Creeper y TNT",
-          "imagen": "./capa-2.png.png",
+          "imagen": "./capa-2.png.optimized.webp",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,
@@ -85,7 +85,7 @@
         {
           "id": "capa-1",
           "nombre": "Logo Minecraft",
-          "imagen": "./capa-1.png.png",
+          "imagen": "./capa-1.png.optimized.webp",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,

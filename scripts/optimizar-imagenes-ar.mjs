@@ -71,17 +71,26 @@ for(const art of catalog.cuadros){
     layer.imagen=await optimizeLayer(layer.imagen);
   }
 }
+// Conservar las mediciones de capas optimizadas en ejecuciones anteriores.
+const active=new Set(catalog.cuadros.flatMap(a=>(a.capas||[]).map(l=>l.imagen)));
+let previous=[];
+try{
+  const saved=JSON.parse(await fs.readFile(manifestFile,'utf8'));
+  previous=(saved.imagenes||[]).filter(r=>
+    active.has(r.usado)&&!stats.some(n=>n.original===r.original));
+}catch(err){if(err.code!=='ENOENT')throw err;}
+const history=[...previous,...stats];
 const report={
   version:1,cuadros:catalog.cuadros.length,
-  totalOriginal:stats.reduce((sum,r)=>sum+r.bytesOriginal,0),
-  totalServido:stats.reduce((sum,r)=>sum+r.bytesOptimizado,0),
-  imagenes:stats
+  totalOriginal:history.reduce((sum,r)=>sum+r.bytesOriginal,0),
+  totalServido:history.reduce((sum,r)=>sum+r.bytesOptimizado,0),
+  imagenes:history
 };
 report.ahorroPorcentaje=report.totalOriginal?
   Math.round((1-report.totalServido/report.totalOriginal)*1000)/10:0;
 await fs.writeFile(FILE,JSON.stringify(catalog,null,2)+'\n');
 await fs.writeFile(manifestFile,JSON.stringify(report,null,2)+'\n');
 console.log('Resumen optimización:',JSON.stringify({
-  procesadas:stats.length,ahorro:report.ahorroPorcentaje+'%',
+  procesadas:stats.length,capasRegistradas:history.length,ahorro:report.ahorroPorcentaje+'%',
   bytesAntes:report.totalOriginal,bytesDespues:report.totalServido
 }));

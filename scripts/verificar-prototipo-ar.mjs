@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html']) {
+for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html']) {
   const html = fs.readFileSync(filename, 'utf8');
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
   assert.ok(scripts.length > 0, filename + ' must include a script');
@@ -76,3 +76,20 @@ assert.equal(multi.cuadros[1].capas[0].visible,true);
 assert.throws(()=>context.normalize({cuadros:[base,base]}),/ID único/);
 assert.throws(()=>context.normalize({cuadros:[{...second,capas:[]}]}),/al menos una capa/);
 console.log('Validación de dos cuadros, índices AR y capas independientes completada');
+
+const authScript=fs.readFileSync('public/prototipo-ar/admin-auth.js','utf8');
+new vm.Script(authScript,{filename:'admin-auth.js'});
+const configScript=fs.readFileSync('public/prototipo-ar/auth-config.js','utf8');
+new vm.Script(configScript,{filename:'auth-config.js'});
+const protectedEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
+assert.ok(protectedEditor.includes('html:not(.admin-verified) body{visibility:hidden}'),'Debe ocultarse el editor hasta validar permisos');
+assert.ok(protectedEditor.includes('window.VISOR222_ADMIN.onReady(async function()'),'No debe ejecutarse la edición sin sesión autorizada');
+assert.ok(protectedEditor.includes('saveCloud')&&protectedEditor.includes('loadCloud'),'Faltan controles de proyecto privado');
+const login=fs.readFileSync('public/prototipo-ar/login.html','utf8');
+assert.ok(login.includes('service.signIn'),'El login no verifica credenciales en Supabase');
+const schema=fs.readFileSync('public/prototipo-ar/supabase-admin.sql','utf8');
+for(const required of ['row level security','visor222_admins','visor222_admin_projects','for insert to authenticated','for select to authenticated']) {
+  assert.ok(schema.includes(required),'Falta configuración RLS: '+required);
+}
+assert.ok(!authScript.includes('service_role'),'Nunca debe usarse la clave service_role en el navegador');
+console.log('Autenticación Supabase, verificación admin y reglas RLS incluidas');

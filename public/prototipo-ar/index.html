@@ -149,7 +149,9 @@
     var position = [x,y,z].join(' ');
     // Las texturas se adjuntan con THREE directamente, evitando que A-Frame
     // muestre un material blanco mientras intenta resolver #asset-id.
-    var plane = element('a-entity', { position: position });
+    var degrees = Number(layer.rotation || 0);
+    if (!Number.isFinite(degrees)) degrees = 0;
+    var plane = element('a-entity', { position: position, rotation: '0 0 ' + degrees });
     plane.userDataLayer = { w: w, h: h, alpha: Math.max(0,Math.min(1,alpha)) };
     var anim = layer.animacion || {};
     var amp = Number(anim.amplitud || 0);
@@ -269,6 +271,7 @@
         }
       });
       art.capas.forEach(function (layer, layerIndex) {
+        if (layer.visible === false) return;
         var plane = createPlane(layer);
         target.appendChild(plane);
         textures.push({plane:plane,layer:layer,order:layerIndex+1});

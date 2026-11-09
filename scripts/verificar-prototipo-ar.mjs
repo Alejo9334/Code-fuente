@@ -126,3 +126,11 @@ for(const img of compressionReport.imagenes){
 const optimizationView=fs.readFileSync('public/prototipo-ar/optimizar.html','utf8');
 assert.ok(optimizationView.includes('optimizacion-imagenes.json'),'Falta informe de ahorro visual');
 console.log('Vista de ahorro de imágenes y sus cifras verificada');
+
+const cinematic=fs.readFileSync('public/prototipo-ar/index.html','utf8');
+for(const flag of ['recognitionPulse','pulseRecognition','revealArtwork','resetReveal','layerPlane.getObject3D','requestAnimationFrame','cancelAnimationFrame','immersiveState','requestFullscreen','aria-pressed','prefers-reduced-motion']){
+  assert.ok(cinematic.includes(flag),'Falta mejora visual AR: '+flag);
+}
+assert.ok(cinematic.includes('La magia está frente a ti'),'Debe mantenerse el mensaje de bienvenida seleccionado');
+assert.ok(cinematic.includes('Activa tu cámara y observa cómo las imágenes cobran vida ante tus ojos.'),'Debe mantenerse la descripción de bienvenida');
+console.log('Confirmación de reconocimiento, revelado cinematográfico y modo inmersivo incluidos.');

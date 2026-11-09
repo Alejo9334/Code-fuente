@@ -148,3 +148,19 @@ El reconocimiento del catálogo publicado usa **`targets.mind` compilado previam
 - Editor: si se agregan/eliminan/reordenan cuadros o cambia la imagen física, descarta el `.mind` anterior del borrador y recompila localmente durante la prueba AR.
 
 La primera compilación de prueba generó el objetivo Creeper en un archivo de ~484 KB. El tiempo real de apertura del visor depende del dispositivo, la red y el número de objetivos; la reducción aún requiere medición en celulares. No se ha cambiado `main` ni la aplicación comercial.
+
+## Optimización automática de capas PNG (nuevo)
+
+El sistema genera versiones **WebP con transparencia** de las capas PNG al publicar el catálogo o regenerar el reconocimiento. Los PNG originales permanecen intactos para poder recuperar calidad, editar o exportar.
+
+- Script: `scripts/optimizar-imagenes-ar.mjs` (se ejecuta en GitHub Actions con `sharp`, sin instalar nada en el celular).
+- Prueba primero WebP **sin pérdida** y WebP de calidad **93/100** con máscara alpha de calidad 100. Prefiere la versión totalmente sin pérdida si pesa como máximo 15 % más que la de calidad alta.
+- Solo usa el archivo nuevo si ahorra como mínimo 5 %. Verifica que conserve dimensiones y presencia del canal alpha.
+- Actualiza las rutas `imagen` de las capas en `catalogo.json` con `.optimized.webp` y mantiene los PNG originales al lado. Las imágenes usadas para reconocer la obra **no** se modifican.
+- Genera `public/prototipo-ar/optimizacion-imagenes.json` con el ahorro por capa y el ahorro acumulado; vuelve a utilizar estos datos en ejecuciones posteriores sin perder las estadísticas.
+- El visor ya admite las texturas optimizadas mediante Three.js. La preparación de nuevos cuadros desde `proyectos/por-publicar.json` incorpora la misma optimización automáticamente, antes de compilar `targets.mind`.
+- Las optimizaciones se ejecutan **únicamente en la rama de desarrollo**, con publicación en `Visor-222-preview`. La versión principal no se altera.
+
+**Primera medición con Minecraft:** cinco PNG originales ~4,08 MB → cinco WebP ~1,15 MB (**71,7 % menos bytes**), manteniendo 2200 × 2750 píxeles y transparencia. El ancho de banda real de una sesión puede variar por caché y conexión.
+
+**Importante:** algunas capas utilizan compresión de calidad 93 (con pequeñas diferencias de color posibles). Si una obra exige fidelidad cromática pixel a pixel, configura el script para elegir siempre WebP sin pérdida o conserva PNG. Comprueba visualmente los resultados en dispositivos reales antes de publicar a clientes.

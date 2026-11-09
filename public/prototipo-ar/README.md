@@ -56,3 +56,11 @@ Abrir `editor.html` en la vista previa HTTPS. Se carga directamente el catálogo
 **La visualización 2D no reproduce exactamente la perspectiva AR:** los cambios de profundidad deben comprobarse con el visor desde el teléfono.
 
 **Este no es todavía un panel administrativo seguro ni un sistema de publicación:** abrir `editor.html` no requiere iniciar sesión, los cambios no actualizan los archivos del repositorio ni se publican para los clientes. Nunca usarlo para subir contenido privado. El siguiente hito comercial será autenticación y almacenamiento persistente con permisos adecuados.
+
+## Probar ajustes del PC en el celular con QR
+
+En `editor.html`, ajustar las capas originales del cuadro Creeper y pulsar **Probar en mi celular · QR**. Escanear el código o copiar el enlace desde el teléfono: se abre `index.html?share=...` con una configuración temporal que incluye orden, posición X/Y/Z, tamaño, rotación, opacidad, visibilidad y animaciones por capa.
+
+La configuración viaja **en el propio enlace**; no necesita base de datos ni servicio de acortamiento. Las imágenes se cargan de las rutas estáticas publicadas en GitHub Pages, no se copian al QR. La URL no modifica el catálogo ni publica cambios para otros visitantes.
+
+**Límites:** este QR solo comparte ajustes de las capas existentes del cuadro Creeper. Si se agrega una capa nueva o cambia la imagen objetivo usando un archivo local, hay que publicar primero esos archivos en el servidor. El enlace no es privado ni un sistema de autenticación: cualquiera que lo reciba puede abrir los parámetros de prueba. Un nuevo QR captura los ajustes del momento, no se actualiza en tiempo real si después editas más.

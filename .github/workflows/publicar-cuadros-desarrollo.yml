@@ -1,0 +1,54 @@
+name: Publicar catálogo AR en desarrollo
+
+on:
+  push:
+    branches:
+      - desarrollo/multicuadros-ar-v2
+    paths:
+      - proyectos/por-publicar.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar-cuadros-desarrollo
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener rama de desarrollo
+        uses: actions/checkout@v4
+        with:
+          ref: desarrollo/multicuadros-ar-v2
+          persist-credentials: true
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar y convertir archivos del proyecto
+        run: node scripts/preparar-publicacion-ar.mjs proyectos/por-publicar.json --apply
+      - name: Validar catálogo publicado y estructura
+        run: |
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          const base='public/prototipo-ar/';
+          const p=JSON.parse(fs.readFileSync(base+'catalogo.json','utf8'));
+          if(!p.cuadros.length)throw Error('Catálogo vacío');
+          for(const art of p.cuadros){
+            if(!fs.existsSync(base+art.imagenObjetivo.slice(2)))throw Error('Falta imagen objetivo: '+art.id);
+            for(const layer of art.capas)if(!fs.existsSync(base+layer.imagen.slice(2)))throw Error('Falta PNG: '+layer.id);
+          }
+          "
+      - name: Confirmar publicación SOLO en desarrollo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/prototipo-ar/catalogo.json public/prototipo-ar/cuadros/
+          if git diff --cached --quiet; then
+            echo "No hay cambios en el catálogo AR"
+          else
+            git commit -m "Publicar cuadros AR desde JSON revisado en desarrollo"
+            git push origin HEAD:desarrollo/multicuadros-ar-v2
+          fi

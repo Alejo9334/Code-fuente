@@ -32,8 +32,11 @@ jobs:
       - name: Instalar compilador MindAR en entorno aislado
         run: |
           mkdir -p .ar-tools
-          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5
+          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5 sharp@0.34.4
           cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
+          cp scripts/optimizar-imagenes-ar.mjs .ar-tools/optimizar.mjs
+      - name: Optimizar PNG para publicar versiones livianas
+        run: node .ar-tools/optimizar.mjs
       - name: Precompilar reconocimiento de todos los cuadros
         run: node .ar-tools/compilar.mjs
       - name: Validar catálogo publicado y estructura

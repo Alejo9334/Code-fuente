@@ -26,9 +26,16 @@ jobs:
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
       - name: Validar y convertir archivos del proyecto
         run: node scripts/preparar-publicacion-ar.mjs proyectos/por-publicar.json --apply
+      - name: Instalar compilador MindAR en entorno aislado
+        run: |
+          mkdir -p .ar-tools
+          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5
+          cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
+      - name: Precompilar reconocimiento de todos los cuadros
+        run: node .ar-tools/compilar.mjs
       - name: Validar catálogo publicado y estructura
         run: |
           node --input-type=module -e "
@@ -49,6 +56,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "No hay cambios en el catálogo AR"
           else
-            git commit -m "Publicar cuadros AR desde JSON revisado en desarrollo"
-            git push origin HEAD:desarrollo/multicuadros-ar-v2
+            git commit -m "Publicar cuadros AR y objetivos precompilados en desarrollo"
+            for intento in 1 2 3; do
+              git fetch origin desarrollo/multicuadros-ar-v2
+              git rebase FETCH_HEAD
+              if git push origin HEAD:desarrollo/multicuadros-ar-v2; then exit 0; fi
+            done
+            exit 1
           fi

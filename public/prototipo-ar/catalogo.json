@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "titulo": "Visor-222 · Prototipo multimarcador",
+  "archivoMind": "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind",
+  "cuadros": [
+    {
+      "id": "demo-001",
+      "nombre": "Cuadro de demostración",
+      "targetIndex": 0,
+      "relacionAltoAncho": 0.552,
+      "capas": [
+        {
+          "id": "halo",
+          "nombre": "Resplandor frontal",
+          "imagen": "demo:halo",
+          "ancho": 0.9,
+          "alto": 0.52,
+          "x": 0,
+          "y": 0,
+          "z": 0.035,
+          "opacidad": 0.82,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.035,
+            "duracionMs": 2100
+          }
+        },
+        {
+          "id": "destellos",
+          "nombre": "Destellos en primer plano",
+          "imagen": "demo:destellos",
+          "ancho": 0.92,
+          "alto": 0.56,
+          "x": 0,
+          "y": 0,
+          "z": 0.095,
+          "opacidad": 1,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0.12,
+            "duracionMs": 1450
+          }
+        }
+      ]
+    }
+  ]
+}

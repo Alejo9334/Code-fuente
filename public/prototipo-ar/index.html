@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050b1c">
+  <title>Visor-222 · Escanear cuadros</title>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body, #stage { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #050b1c; }
+    #stage { position: fixed; inset: 0; }
+    #stage a-scene, #stage canvas { width: 100% !important; height: 100% !important; }
+    .hud { position: fixed; z-index: 50; pointer-events: none; color: white; }
+    #top { top: max(18px, env(safe-area-inset-top)); left: 18px; right: 18px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-size: 16px; letter-spacing: .02em; font-weight: 750; text-shadow: 0 2px 12px #000; }
+    .pill { padding: 8px 11px; border: 1px solid #ffffff40; border-radius: 999px; background: #06132cbb; backdrop-filter: blur(12px); font-size: 12px; }
+    #reticle { left: 50%; top: 49%; transform: translate(-50%,-50%); width: min(68vw, 290px); aspect-ratio: 4/3; border: 2px solid #8dd3ff99; border-radius: 24px; box-shadow: 0 0 0 999px #00000025; transition: opacity .3s; }
+    #reticle::before, #reticle::after { content: ""; position: absolute; width: 34px; height: 34px; border: 4px solid #6ed6ff; border-radius: 12px; }
+    #reticle::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+    #reticle::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+    #bottom { bottom: max(20px, env(safe-area-inset-bottom)); left: 18px; right: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+    #message { max-width: 430px; padding: 12px 16px; border-radius: 16px; background: #08172ddd; backdrop-filter: blur(12px); border: 1px solid #ffffff25; font-size: 13px; line-height: 1.45; }
+    button { pointer-events: auto; appearance: none; border: 0; border-radius: 14px; padding: 14px 24px; font: inherit; font-size: 15px; font-weight: 750; background: #5dd4ff; color: #072034; box-shadow: 0 8px 28px #0006; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: wait; }
+    #stop { display: none; color: white; border: 1px solid #ffffff40; background: #15283fd9; }
+    #overlay { position: fixed; inset: 0; z-index: 40; background: radial-gradient(circle at 50% 38%, #122f54 0, #050b1c 70%); display: flex; align-items: center; justify-content: center; padding: 24px; color: white; }
+    #overlay .panel { max-width: 470px; text-align: center; display: grid; gap: 16px; justify-items: center; }
+    h1 { font-size: clamp(27px, 7vw, 38px); line-height: 1.1; margin: 0; }
+    p { margin: 0; color: #b6cee8; line-height: 1.55; }
+    #overlay .hint { font-size: 12px; }
+    #stage .a-enter-vr, #stage .a-enter-ar { display: none !important; }
+    body.running #overlay { display: none; }
+    body:not(.running) #reticle { opacity: 0; }
+    body.detected #reticle { opacity: 0; }
+    body:not(.running) #stop { display: none; }
+    body.running #stop { display: inline-block; }
+    @media (prefers-reduced-motion: reduce) { #reticle { transition: none; } }
+  </style>
+</head>
+<body>
+  <div id="stage" aria-label="Visor de realidad aumentada"></div>
+  <div id="overlay">
+    <div class="panel">
+      <div style="font-size:52px" aria-hidden="true">🖼️</div>
+      <h1>Tu cuadro cobra vida</h1>
+      <p>Activa la cámara y apunta a uno de los cuadros registrados. Sus capas PNG aparecerán en su posición, con profundidad y movimiento.</p>
+      <p id="count">Cargando catálogo de cuadros…</p>
+      <button id="start" disabled>Activar cámara</button>
+      <p class="hint">Sin QR · Sin instalación · Requiere permiso de cámara y conexión HTTPS</p>
+    </div>
+  </div>
+  <div class="hud" id="top"><span class="brand">VISOR<span style="color:#5dd4ff">·222</span></span><span class="pill" id="state">Preparando</span></div>
+  <div class="hud" id="reticle" aria-hidden="true"></div>
+  <div class="hud" id="bottom">
+    <span id="message" role="status" aria-live="polite">Prepara el cuadro frente a la cámara.</span>
+    <button id="stop">Cerrar cámara</button>
+  </div>
+<script>
+(function () {
+  'use strict';
+  var stage = document.getElementById('stage');
+  var startButton = document.getElementById('start');
+  var stopButton = document.getElementById('stop');
+  var status = document.getElementById('state');
+  var message = document.getElementById('message');
+  var count = document.getElementById('count');
+  var scene = null;
+  var ready = false;
+  var tracked = new Set();
+  var catalog = null;
+
+  function say(text, short) {
+    message.textContent = text;
+    status.textContent = short || text;
+  }
+
+  function element(tag, attributes) {
+    var node = document.createElement(tag);
+    Object.keys(attributes || {}).forEach(function (key) { node.setAttribute(key, attributes[key]); });
+    return node;
+  }
+
+  // Sprites PNG verdaderamente transparentes para la demostración, creados en canvas.
+  // Los cuadros reales usarán archivos .png propios y no esta función.
+  function demoPng(type) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 320;
+    var ctx = canvas.getContext('2d');
+    if (type === 'halo') {
+      var glow = ctx.createRadialGradient(256, 160, 12, 256, 160, 218);
+      glow.addColorStop(0, 'rgba(72,221,255,.40)');
+      glow.addColorStop(.55, 'rgba(74,152,255,.25)');
+      glow.addColorStop(1, 'rgba(74,152,255,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, 512, 320);
+      ctx.strokeStyle = 'rgba(133,231,255,.75)';
+      ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.ellipse(256,160,204,122,0,0,Math.PI*2); ctx.stroke();
+    } else {
+      [[100,84,12],[410,105,16],[190,265,10],[315,50,12],[378,246,9]].forEach(function(p) {
+        var x=p[0], y=p[1], r=p[2];
+        ctx.fillStyle='rgba(255,239,171,.95)';
+        ctx.beginPath();ctx.moveTo(x,y-r*1.7);ctx.lineTo(x+r*.3,y-r*.3);
+        ctx.lineTo(x+r*1.7,y);ctx.lineTo(x+r*.3,y+r*.3);
+        ctx.lineTo(x,y+r*1.7);ctx.lineTo(x-r*.3,y+r*.3);
+        ctx.lineTo(x-r*1.7,y);ctx.lineTo(x-r*.3,y-r*.3);ctx.closePath();ctx.fill();
+      });
+    }
+    return canvas.toDataURL('image/png');
+  }
+
+  function validCatalog(data) {
+    if (!data || !data.archivoMind || !Array.isArray(data.cuadros) || !data.cuadros.length) {
+      throw new Error('El catálogo debe incluir archivoMind y al menos un cuadro.');
+    }
+    var ids = new Set(), indexes = new Set();
+    data.cuadros.forEach(function (art) {
+      if (!art.id || !Number.isInteger(art.targetIndex) || art.targetIndex < 0 || !Array.isArray(art.capas)) {
+        throw new Error('Cada cuadro necesita id, targetIndex y capas.');
+      }
+      if (ids.has(art.id) || indexes.has(art.targetIndex)) throw new Error('Hay IDs o targetIndex duplicados.');
+      ids.add(art.id); indexes.add(art.targetIndex);
+    });
+    return data;
+  }
+
+  function assetSource(source) {
+    if (source === 'demo:halo') return demoPng('halo');
+    if (source === 'demo:destellos') return demoPng('destellos');
+    if (typeof source !== 'string' || !source || /^javascript:/i.test(source)) throw new Error('Ruta de capa no válida');
+    return source;
+  }
+
+  function createPlane(layer, assetId) {
+    var x = Number(layer.x || 0), y = Number(layer.y || 0), z = Number(layer.z || 0);
+    var w = Number(layer.ancho || 1), h = Number(layer.alto || 1);
+    if (![x,y,z,w,h].every(Number.isFinite) || w <= 0 || h <= 0) throw new Error('Medidas de capa no válidas');
+    var alpha = Number(layer.opacidad === undefined ? 1 : layer.opacidad);
+    var position = [x,y,z].join(' ');
+    var plane = element('a-plane', {
+      position: position,
+      width: String(w),
+      height: String(h),
+      material: 'shader: flat; src: #' + assetId + '; transparent: true; opacity: ' + Math.max(0,Math.min(1,alpha)) + '; alphaTest: 0.01; depthWrite: false; side: double'
+    });
+    var anim = layer.animacion || {};
+    var amp = Number(anim.amplitud || 0);
+    var dur = Math.max(350, Number(anim.duracionMs || 1800));
+    if (anim.tipo === 'flotar' && amp > 0) {
+      plane.setAttribute('animation__flotar', 'property: position; from: ' + position + '; to: ' + [x,y+amp,z].join(' ') + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
+    } else if (anim.tipo === 'pulso' && amp > 0) {
+      plane.setAttribute('animation__pulso', 'property: scale; from: 1 1 1; to: ' + [1+amp,1+amp,1].join(' ') + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
+    } else if (anim.tipo === 'girar' && amp !== 0) {
+      plane.setAttribute('animation__girar', 'property: rotation; from: 0 0 0; to: 0 0 ' + amp + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
+    }
+    return plane;
+  }
+
+  function buildScene(data) {
+    scene = element('a-scene', {
+      embedded: '',
+      'vr-mode-ui': 'enabled: false',
+      'device-orientation-permission-ui': 'enabled: false',
+      renderer: 'colorManagement: true; alpha: true; antialias: true',
+      'mindar-image': 'imageTargetSrc: ' + new URL(data.archivoMind, location.href).href +
+        '; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; maxTrack: 1'
+    });
+    scene.style.cssText='position:absolute; inset:0; width:100%; height:100%;';
+    var assets=element('a-assets', {timeout: '20000'});
+    data.cuadros.forEach(function (art, index) {
+      var target=element('a-entity', {'mindar-image-target': 'targetIndex: ' + art.targetIndex});
+      target.addEventListener('targetFound', function () {
+        tracked.add(art.id);
+        document.body.classList.add('detected');
+        say('Experiencia activa: ' + art.nombre, 'Cuadro reconocido');
+      });
+      target.addEventListener('targetLost', function () {
+        tracked.delete(art.id);
+        if (!tracked.size) {
+          document.body.classList.remove('detected');
+          say('Mueve suavemente la cámara hasta encontrar un cuadro registrado.', 'Buscando cuadro');
+        }
+      });
+      art.capas.forEach(function (layer, layerIndex) {
+        var id='asset-' + index + '-' + layerIndex;
+        var image=element('img', {id:id, src:assetSource(layer.imagen), crossorigin:'anonymous'});
+        assets.appendChild(image);
+        target.appendChild(createPlane(layer,id));
+      });
+      scene.appendChild(target);
+    });
+    scene.insertBefore(assets,scene.firstChild);
+    scene.appendChild(element('a-camera', {position:'0 0 0', 'look-controls':'enabled: false'}));
+    stage.appendChild(scene);
+    scene.addEventListener('loaded', function () {
+      ready=true;
+      startButton.disabled=false;
+      status.textContent='Listo';
+    });
+  }
+
+  async function start() {
+    if (!ready || !scene) return;
+    if (!window.isSecureContext) { say('La cámara requiere HTTPS o localhost.', 'HTTPS requerido'); return; }
+    startButton.disabled=true;
+    say('Abriendo cámara…', 'Iniciando');
+    try {
+      var system=scene.systems['mindar-image-system'];
+      if (!system) throw new Error('No se cargó el motor de reconocimiento.');
+      await system.start();
+      document.body.classList.add('running');
+      say('Apunta al cuadro registrado y mantén el teléfono estable.', 'Buscando cuadro');
+    } catch(err) {
+      console.error(err);
+      say('No se pudo iniciar la cámara. Revisa permisos, HTTPS y compatibilidad del navegador.', 'Error de cámara');
+    } finally { startButton.disabled=false; }
+  }
+
+  async function stop() {
+    try { if(scene && scene.systems['mindar-image-system']) await scene.systems['mindar-image-system'].stop(); }
+    catch(err) { console.error(err); }
+    tracked.clear();
+    document.body.classList.remove('running','detected');
+    say('Cámara detenida.', 'Listo');
+  }
+
+  startButton.addEventListener('click', start);
+  stopButton.addEventListener('click', stop);
+  window.addEventListener('pagehide', function () { if(scene && scene.systems['mindar-image-system']) scene.systems['mindar-image-system'].stop(); });
+
+  fetch('./catalogo.json', {cache:'no-store'})
+    .then(function(res){ if(!res.ok) throw new Error('No se encontró catalogo.json'); return res.json(); })
+    .then(function(data){
+      catalog=validCatalog(data);
+      count.textContent=data.cuadros.length + (data.cuadros.length===1?' cuadro registrado':' cuadros registrados') + ' · Sin QR';
+      buildScene(data);
+    })
+    .catch(function(err) {
+      console.error(err);
+      count.textContent='Error al cargar el catálogo: ' + err.message;
+      say('Corrige catalogo.json para activar el visor.', 'Error de catálogo');
+    });
+})();
+</script>
+</body>
+</html>

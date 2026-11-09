@@ -102,3 +102,36 @@ El editor verifica la sesión con `getUser()` y consulta la tabla `visor222_admi
 **Estado actual:** sin la URL y clave pública de tu propio proyecto Supabase, `login.html` mostrará «autenticación no configurada», no permitirá iniciar sesión y `editor.html` redirigirá al login. Es intencional: no se habilita ninguna contraseña ficticia o alternativa insegura.
 
 En producción considera habilitar MFA, una política de contraseñas fuerte, recuperación de cuenta con SMTP propio y un dominio privado con control de acceso perimetral para evitar que el HTML del editor pueda descargarse.
+
+## Siguiente etapa: publicación controlada de cuadros (sin Supabase)
+
+Se añadió el convertidor `scripts/preparar-publicacion-ar.mjs` y el flujo `.github/workflows/publicar-cuadros-desarrollo.yml`. Ambos operan **exclusivamente en la rama** `desarrollo/multicuadros-ar-v2`, sin publicar ni fusionar cambios en `main`.
+
+### Procedimiento para publicar nuevos cuadros en Preview
+
+1. En el editor (cuando se haya configurado el acceso), crea o importa tus cuadros y pulsa «Descargar proyecto JSON». Si todavía no está configurada la autenticación, conserva el JSON exportado previamente.
+2. **Ten en cuenta la privacidad:** este repositorio es público; subir el JSON significa publicar tanto los nombres como las imágenes incrustadas. No subas fotos privadas ni datos sensibles.
+3. En GitHub, selecciona la rama `desarrollo/multicuadros-ar-v2`. Crea o reemplaza el archivo `proyectos/por-publicar.json` con el contenido del JSON exportado. Este nombre activa el flujo de publicación de desarrollo.
+4. La acción automatizada valida los cuadros, extrae las imágenes incrustadas como archivos PNG/JPG en `public/prototipo-ar/cuadros/<id>/`, asigna índices de reconocimiento consecutivos y actualiza `public/prototipo-ar/catalogo.json`.
+5. Si la validación falla, GitHub Actions mostrará el error y **no** confirmará cambios. Si pasa, los archivos se guardan únicamente en la rama de desarrollo.
+6. El repositorio `Visor-222-preview` se sincroniza desde esta rama cada 15 minutos aproximadamente (las acciones programadas de GitHub pueden retrasarse). El resultado queda disponible en `https://alejo9334.github.io/Visor-222-preview/`.
+7. Prueba desde el celular que los distintos cuadros se reconozcan y que las capas correspondan a cada obra. No fusionar a `main` sin esta prueba física.
+
+### Revisión local sin publicar
+
+```bash
+node scripts/preparar-publicacion-ar.mjs proyectos/ejemplo-publicacion.json
+```
+
+Esto crea `tmp/ar-publicacion-revision/` con un catálogo y los PNG preparados, sin modificar los originales. Para una publicación controlada desde un runner de CI:
+
+```bash
+node scripts/preparar-publicacion-ar.mjs proyectos/por-publicar.json --apply
+```
+
+### Límites actuales
+
+- El flujo publica archivos estáticos y no depende de Supabase, pero **no es todavía un botón de publicación directa dentro del editor**. Requiere subir el archivo JSON a GitHub con permisos de escritura.
+- Los cambios del catálogo publicado son visibles para cualquiera que visite Preview. No uses el repositorio público para contenidos privados o borradores sensibles.
+- Hay límites de 30 cuadros, 15 capas por cuadro, JSON de 24 MB y 8 MB por archivo incrustado. Las capas deben ser PNG.
+- El motor MindAR compila el reconocimiento en el navegador. El rendimiento, los tiempos de compilación y la precisión con varios cuadros físicos deben comprobarse en dispositivos reales. Posteriormente se puede incorporar compilación previa en `.mind`.

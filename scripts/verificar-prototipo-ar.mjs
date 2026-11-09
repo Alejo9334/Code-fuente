@@ -46,3 +46,33 @@ const inbound=JSON.parse(Buffer.from(encoded,'base64url').toString('ascii'));
 assert.deepEqual(inbound[2],shareRows);
 assert.equal(inbound[1],artwork.id);
 console.log('Enlace QR validado para cinco capas con orden, visibilidad y animaciones');
+
+const multiEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
+for(const key of ['artlist','newArt','cloneArt','deleteArt','artUp','artDown','createDialog','createForm','createTarget','createLayers','selectedArtId','reindex','saveForCamera']) {
+  assert.ok(multiEditor.includes(key), 'Falta control de múltiples cuadros: '+key);
+}
+assert.ok(viewer.includes("localMode === 'idb'"),'El visor no acepta proyectos desde IndexedDB');
+assert.ok(viewer.includes('readCameraProject'),'El visor no puede recuperar proyectos con varias imágenes');
+const from=multiEditor.indexOf('  function normalize(raw){');
+const to=multiEditor.indexOf('  function persist(){',from);
+assert.ok(from>=0&&to>from,'No se encontró función de normalización multic uadro');
+const context=vm.createContext({
+  safeNumber:(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback,
+  Set,Error
+});
+vm.runInContext(multiEditor.slice(from,to),context,{filename:'normalize-multicuadros'});
+const base=JSON.parse(JSON.stringify(rawCatalog.cuadros[0]));
+const second={
+  id:'cuadro-prueba-segundo',nombre:'Segundo cuadro',
+  targetIndex:42,relacionAltoAncho:1.25,
+  imagenObjetivo:'data:image/jpeg;base64,abc',
+  capas:[{id:'capa-5',imagen:'data:image/png;base64,xyz',ancho:1,alto:1.25}]
+};
+const multi=JSON.parse(JSON.stringify({version:2,cuadros:[base,second]}));
+context.normalize(multi);
+assert.equal(multi.cuadros[0].targetIndex,0);
+assert.equal(multi.cuadros[1].targetIndex,1);
+assert.equal(multi.cuadros[1].capas[0].visible,true);
+assert.throws(()=>context.normalize({cuadros:[base,base]}),/ID único/);
+assert.throws(()=>context.normalize({cuadros:[{...second,capas:[]}]}),/al menos una capa/);
+console.log('Validación de dos cuadros, índices AR y capas independientes completada');

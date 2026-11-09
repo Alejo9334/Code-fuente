@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#09111f">
+<title>Visor-222 | Editor visual de capas</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080f1c;color:#eef6ff;color-scheme:dark}*{box-sizing:border-box}body{margin:0}
+button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+header{height:72px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #233147;gap:12px;background:#0d1828}
+.brand{font-size:20px;font-weight:850;letter-spacing:-.06em}.brand em{color:#58cafd;font-style:normal}.brand small{font-size:12px;color:#90a8c5;font-weight:500;letter-spacing:0}
+button{background:#50c9f0;color:#072032;padding:11px 15px;border:0;border-radius:12px;font-size:13px;font-weight:750}
+button.subtle{background:#1b2b40;color:#d8e9fb;border:1px solid #3b5371}
+button.danger{background:#3b2230;color:#ffc6cd;border:1px solid #664051}
+.wrap{display:grid;grid-template-columns:260px minmax(340px,1fr) 300px;gap:16px;max-width:1600px;margin:auto;padding:18px}
+.panel{border-radius:18px;background:#101c2e;border:1px solid #253751;padding:17px;min-width:0}
+h1{font-size:17px;margin:0 0 6px}h2{font-size:14px;margin:0 0 12px}.muted{color:#96aac7;font-size:12px;line-height:1.5}
+.group-label{color:#9eb4d0;font-size:11px;letter-spacing:.09em;font-weight:800;text-transform:uppercase;margin:20px 0 8px}
+.art{background:#15243a;padding:12px;border:1px solid #38516a;border-radius:12px;font-size:13px}
+.layerlist{display:grid;gap:8px}
+.layer{display:flex;align-items:center;gap:9px;width:100%;padding:9px;background:#0b1525;color:#e0ebfa;border:1px solid #293e59;border-radius:12px;text-align:left}
+.layer.active{border-color:#67d4f5;box-shadow:0 0 0 1px #67d4f580;background:#142c42}
+.thumb{width:42px;height:48px;object-fit:contain;background:repeating-conic-gradient(#283953 0% 25%,#101e32 0% 50%) 50%/12px 12px;border-radius:6px}
+.layername{font-size:12px;font-weight:750;display:block}.layerdepth{font-size:11px;color:#8baccb;display:block;margin-top:4px}
+.eye{margin-left:auto;color:#69d6fe;font-size:12px}
+.center{display:flex;flex-direction:column;gap:15px}.preview-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.canvas-wrap{min-height:520px;border:1px solid #293d59;border-radius:17px;background:radial-gradient(circle at 50% 30%,#233958 0,#0b1425 76%);display:grid;place-items:center;padding:28px;overflow:hidden}
+.artboard{width:min(100%,420px);aspect-ratio:1638/2047;position:relative;transform-style:preserve-3d;perspective:850px;background:#05070b;box-shadow:0 16px 50px #0009;border:5px solid #394d64;border-radius:5px}
+.artboard .physical{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.layerplane{position:absolute;transform-style:preserve-3d;pointer-events:none;transform-origin:center}
+.layerplane img{display:block;width:100%;height:100%;object-fit:fill;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.layerplane.focus{outline:2px dashed #58c9f4;outline-offset:2px}
+@keyframes floaty{from{translate:0 0}to{translate:0 -2.5%}}
+@keyframes pulse{from{scale:1}to{scale:var(--pulse,1.05)}}
+@keyframes turn{from{rotate:0deg}to{rotate:var(--angle,8deg)}}
+.right{display:flex;flex-direction:column;gap:13px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{display:flex;justify-content:space-between;font-size:12px;color:#b7cbe4;gap:8px}.field output{color:#64d4fa;font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:#5cd2f5;width:100%;margin:0}
+input[type=text],input[type=number],select{width:100%;background:#0a1525;color:#f3f8ff;border:1px solid #314866;border-radius:10px;padding:10px;outline-color:#59cafa;font-size:13px}
+input[type=file]{width:100%;font-size:12px;color:#a8bfdc}
+hr{border:0;border-top:1px solid #2a3b55;margin:5px 0}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls button{flex:1}
+.flag{display:inline-block;background:#182d40;color:#9edff3;border:1px solid #315a70;border-radius:99px;padding:6px 9px;font-size:11px}
+footer{max-width:1600px;margin:0 auto 30px;padding:0 18px}
+.notice{font-size:12px;color:#c7d7ed;padding:12px;border-radius:13px;background:#10283c;border:1px solid #2d5169;line-height:1.55}
+.status{font-size:12px;color:#bfe6ff;min-height:28px;padding:8px 0}
+.switch{display:flex;align-items:center;gap:8px;font-size:12px;color:#c2d4eb}
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:1100px){.wrap{grid-template-columns:210px minmax(260px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.right>h2,.right>.full{grid-column:1/-1}}
+@media(max-width:700px){header{height:auto;padding:14px;align-items:start;flex-direction:column}.wrap{grid-template-columns:1fr;padding:10px}.canvas-wrap{min-height:380px;padding:15px}.right{display:flex}.artboard{width:min(100%,340px)}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header><div class="brand">VISOR<em>·222</em> <small>Editor visual · Prototipo</small></div>
+<div class="top-actions">
+<button class="subtle" id="reset">Restablecer</button>
+<button class="subtle" id="export">Descargar proyecto JSON</button>
+<button id="tryAR">Probar en cámara AR</button>
+</div>
+</header>
+<div class="wrap">
+<aside class="panel">
+<h1>Mis cuadros</h1>
+<p class="muted">Trabajando con una obra de prueba. El catálogo admite más obras, pero todavía no hay publicación automática.</p>
+<div class="art" id="artName">Cargando proyecto…</div>
+<div class="group-label">Capas · fondo → frente</div>
+<div class="layerlist" id="layerlist"></div>
+<div class="group-label">Añadir archivos</div>
+<div class="field"><label for="addPng">Agregar capa PNG</label><input id="addPng" type="file" accept="image/png"></div>
+<div class="field" style="margin-top:12px"><label for="changeTarget">Cambiar imagen impresa</label><input id="changeTarget" type="file" accept="image/png,image/jpeg,image/webp"></div>
+<div class="group-label">Proyecto guardado</div>
+<div class="controls"><button class="subtle" id="save">Guardar borrador local</button><button class="subtle" id="importButton">Importar JSON</button></div>
+<input id="importFile" type="file" accept="application/json,.json" hidden>
+</aside>
+<main class="center">
+<section class="panel">
+<div class="preview-toolbar"><div><h1>Composición del cuadro</h1><span class="muted">Vista previa aproximada en 2D; prueba la profundidad real en cámara.</span></div><span class="flag" id="counter">5 capas</span></div>
+<div class="canvas-wrap"><div id="artboard" class="artboard"><img id="physical" class="physical" alt="Imagen física de referencia"></div></div>
+<div class="controls" style="margin-top:14px">
+<label class="switch"><input id="showBase" type="checkbox" checked> Mostrar cuadro impreso</label>
+<label class="switch"><input id="showOutline" type="checkbox"> Resaltar capa activa</label>
+<label class="switch"><input id="animatePreview" type="checkbox" checked> Animar vista previa</label>
+</div>
+</section>
+<div class="notice"><strong>Edición local, no privada:</strong> estos ajustes se guardan únicamente en este navegador o en un JSON descargado. No se publican automáticamente para tus clientes y esta página aún no tiene autenticación. La versión pública original no cambia.</div>
+<div class="status" id="status" role="status" aria-live="polite"></div>
+</main>
+<aside class="panel right">
+<h2>Propiedades de la capa <span id="activeTag" class="flag">—</span></h2>
+<div class="field full"><label for="name">Nombre</label><input id="name" type="text" maxlength="90"></div>
+<div class="field"><label for="posX">Posición horizontal X <output id="posXVal"></output></label><input id="posX" type="range" min="-0.5" max="0.5" step="0.005"></div>
+<div class="field"><label for="posY">Posición vertical Y <output id="posYVal"></output></label><input id="posY" type="range" min="-0.5" max="0.5" step="0.005"></div>
+<div class="field"><label for="depth">Profundidad Z <output id="depthVal"></output></label><input id="depth" type="range" min="0" max="0.3" step="0.005"></div>
+<div class="field"><label for="scale">Escala <output id="scaleVal"></output></label><input id="scale" type="range" min="0.25" max="2" step="0.01"></div>
+<div class="field"><label for="rotation">Rotación <output id="rotationVal"></output></label><input id="rotation" type="range" min="-180" max="180" step="1"></div>
+<div class="field"><label for="opacity">Opacidad <output id="opacityVal"></output></label><input id="opacity" type="range" min="0" max="1" step="0.01"></div>
+<hr class="full">
+<h2 class="full">Animación independiente</h2>
+<div class="field"><label for="animationType">Tipo de animación</label><select id="animationType"><option value="ninguna">Sin animación</option><option value="flotar">Flotación</option><option value="pulso">Pulso</option><option value="girar">Rotación animada</option></select></div>
+<div class="field"><label for="amplitude">Amplitud <output id="amplitudeVal"></output></label><input id="amplitude" type="range" min="0" max="0.25" step="0.005"></div>
+<div class="field"><label for="duration">Duración <output id="durationVal"></output></label><input id="duration" type="range" min="400" max="9000" step="100"></div>
+<hr class="full">
+<div class="controls full"><label class="switch"><input id="visible" type="checkbox"> Capa visible</label></div>
+<div class="controls full"><button id="toBack" class="subtle">Mover atrás</button><button id="toFront" class="subtle">Mover delante</button></div>
+<div class="controls full"><button id="remove" class="danger">Eliminar capa</button></div>
+</aside>
+</div>
+<footer><div class="notice">El orden de las capas está definido desde el fondo hacia el frente. Al abrir la cámara AR, el visor recibe una copia temporal de esta configuración mediante el almacenamiento de sesión. Si agregas PNG grandes, el navegador podría limitar el tamaño del proyecto; descarga el JSON como respaldo.</div></footer>
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var draftKey='visor222-editor-visual-v1';
+  var catalog=null, selectedId=null, busy=false;
+  var aspect=2047/1638;
+  var controlIds=['name','posX','posY','depth','scale','rotation','opacity','animationType','amplitude','duration','visible'];
+  function note(msg){$('status').textContent=msg;}
+  function safeNumber(n, fallback){var v=Number(n);return Number.isFinite(v)?v:fallback;}
+  function selected(){return catalog&&catalog.cuadros[0].capas.find(function(l){return l.id===selectedId;});}
+  function article(){return catalog.cuadros[0];}
+  function asset(src){return /^data:/i.test(src)?src:new URL(src,location.href).href;}
+  function normalize(raw){
+    if(!raw||!Array.isArray(raw.cuadros)||!raw.cuadros[0]||!Array.isArray(raw.cuadros[0].capas))throw Error('El archivo JSON no contiene un cuadro válido.');
+    var art=raw.cuadros[0];
+    if(!art.imagenObjetivo)throw Error('Falta la imagen física de referencia.');
+    if(!art.capas.length)throw Error('El proyecto no tiene capas.');
+    var ids=new Set();
+    art.capas.forEach(function(l){
+      if(!l.id||!l.imagen||ids.has(l.id))throw Error('Cada capa debe tener ID e imagen únicos.');
+      ids.add(l.id);
+      l.ancho=safeNumber(l.ancho,1);l.alto=safeNumber(l.alto,aspect);
+      l.baseAncho=safeNumber(l.baseAncho,l.ancho);l.baseAlto=safeNumber(l.baseAlto,l.alto);
+      l.x=safeNumber(l.x,0);l.y=safeNumber(l.y,0);l.z=safeNumber(l.z,0);
+      l.rotation=safeNumber(l.rotation,0);
+      l.opacidad=safeNumber(l.opacidad,1);
+      l.visible=l.visible!==false;
+      l.animacion=l.animacion||{tipo:'ninguna',amplitud:0,duracionMs:2000};
+    });
+    return raw;
+  }
+  function persist(){
+    if(!catalog)return;
+    try{localStorage.setItem(draftKey,JSON.stringify(catalog));note('Borrador guardado en este navegador.');}
+    catch(e){note('El navegador no tiene espacio para guardar todo. Descarga el JSON para conservar los cambios.');}
+  }
+  function drawList(){
+    var list=$('layerlist');list.replaceChildren();
+    var all=article().capas;
+    all.forEach(function(l,i){
+      var b=document.createElement('button');b.className='layer'+(l.id===selectedId?' active':'');b.type='button';b.setAttribute('aria-pressed',String(l.id===selectedId));
+      var img=document.createElement('img');img.className='thumb';img.src=asset(l.imagen);img.alt='';
+      var name=document.createElement('span');name.style.flex='1';
+      var first=document.createElement('span');first.className='layername';first.textContent=l.nombre;
+      var second=document.createElement('span');second.className='layerdepth';second.textContent='Capa '+(i+1)+' · Z '+safeNumber(l.z,0).toFixed(3);
+      name.append(first,second);
+      var eye=document.createElement('span');eye.className='eye';eye.textContent=l.visible===false?'Oculta':'●';
+      b.append(img,name,eye);b.addEventListener('click',function(){selectedId=l.id;render();});
+      list.appendChild(b);
+    });
+    $('counter').textContent=all.length+' capas';
+  }
+  function drawBoard(){
+    var b=$('artboard');b.querySelectorAll('.layerplane').forEach(function(n){n.remove();});
+    var art=article();aspect=safeNumber(art.relacionAltoAncho,aspect);
+    $('physical').src=asset(art.imagenObjetivo);$('physical').style.visibility=$('showBase').checked?'visible':'hidden';
+    article().capas.forEach(function(l,index){
+      if(l.visible===false)return;
+      var box=document.createElement('div');box.className='layerplane'+(($('showOutline').checked&&selectedId===l.id)?' focus':'');
+      var w=safeNumber(l.ancho,1),h=safeNumber(l.alto,aspect);
+      box.style.width=w*100+'%';box.style.height=(h/aspect)*100+'%';
+      box.style.left=(50+safeNumber(l.x,0)*100)+'%';
+      box.style.top=(50-safeNumber(l.y,0)/aspect*100)+'%';
+      box.style.zIndex=String(index+1);
+      box.style.transform='translate(-50%,-50%) translateZ('+safeNumber(l.z,0)*200+'px) rotate('+safeNumber(l.rotation,0)+'deg)';
+      var pic=document.createElement('img');pic.src=asset(l.imagen);pic.alt='';
+      pic.style.opacity=String(safeNumber(l.opacidad,1));
+      if($('animatePreview').checked&&l.animacion){
+        var ani=l.animacion,dur=Math.max(400,safeNumber(ani.duracionMs,2000));
+        if(ani.tipo==='flotar'){pic.style.animation='floaty '+dur+'ms ease-in-out infinite alternate';pic.style.setProperty('--float',''+safeNumber(ani.amplitud,.02));}
+        else if(ani.tipo==='pulso'){pic.style.setProperty('--pulse',String(1+safeNumber(ani.amplitud,.03)));pic.style.animation='pulse '+dur+'ms ease-in-out infinite alternate';}
+        else if(ani.tipo==='girar'){pic.style.setProperty('--angle',safeNumber(ani.amplitud,0)+'deg');pic.style.animation='turn '+dur+'ms ease-in-out infinite alternate';}
+      }
+      box.appendChild(pic);b.appendChild(box);
+    });
+  }
+  function populate(){
+    var l=selected();if(!l)return;
+    $('activeTag').textContent=l.id;$('name').value=l.nombre;
+    $('posX').value=l.x;$('posY').value=l.y;$('depth').value=l.z;
+    $('scale').value=safeNumber(l.ancho,1)/safeNumber(l.baseAncho,1);
+    $('rotation').value=l.rotation||0;$('opacity').value=l.opacidad;
+    $('animationType').value=l.animacion.tipo||'ninguna';
+    $('amplitude').value=Math.min(.25,Math.abs(safeNumber(l.animacion.amplitud,0)));
+    $('duration').value=l.animacion.duracionMs||2000;
+    $('visible').checked=l.visible!==false;updateOutputs();
+  }
+  function updateOutputs(){
+    var values={
+      posX:Number($('posX').value).toFixed(3),
+      posY:Number($('posY').value).toFixed(3),
+      depth:Number($('depth').value).toFixed(3),
+      scale:Math.round(Number($('scale').value)*100)+'%',
+      rotation:$('rotation').value+'°',
+      opacity:Math.round(Number($('opacity').value)*100)+'%',
+      amplitude:Number($('amplitude').value).toFixed(3),
+      duration:(Number($('duration').value)/1000).toFixed(1)+' s'
+    };
+    Object.keys(values).forEach(function(id){$(id+'Val').textContent=values[id];});
+  }
+  function render(){if(!catalog)return;$('artName').textContent=article().nombre||article().id;drawList();drawBoard();populate();}
+  function controlChanged(){
+    var l=selected();if(!l)return;
+    l.nombre=$('name').value||l.id;l.x=Number($('posX').value);l.y=Number($('posY').value);
+    l.z=Number($('depth').value);l.rotation=Number($('rotation').value);
+    var scale=Number($('scale').value);
+    l.ancho=safeNumber(l.baseAncho,1)*scale;l.alto=safeNumber(l.baseAlto,aspect)*scale;
+    l.opacidad=Number($('opacity').value);l.visible=$('visible').checked;
+    l.animacion={tipo:$('animationType').value,amplitud:Number($('amplitude').value),duracionMs:Number($('duration').value)};
+    updateOutputs();drawList();drawBoard();
+  }
+  controlIds.forEach(function(id){$(id).addEventListener('input',controlChanged);$(id).addEventListener('change',controlChanged);});
+  ['showBase','showOutline','animatePreview'].forEach(function(id){$(id).addEventListener('change',drawBoard);});
+  $('toBack').addEventListener('click',function(){move(-1);});
+  $('toFront').addEventListener('click',function(){move(1);});
+  function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
+  $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
+  $('save').addEventListener('click',persist);
+  $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;localStorage.removeItem(draftKey);loadDefault();});
+  $('export').addEventListener('click',function(){
+    if(!catalog)return;
+    var blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='visor222-proyecto-'+article().id+'.json';a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},2000);note('Proyecto JSON descargado.');
+  });
+  $('importButton').addEventListener('click',function(){$('importFile').click();});
+  $('importFile').addEventListener('change',async function(){
+    var file=this.files[0];if(!file)return;
+    try{catalog=normalize(JSON.parse(await file.text()));selectedId=article().capas[0].id;render();persist();}
+    catch(e){note('No se pudo importar el proyecto: '+e.message);}
+    this.value='';
+  });
+  $('tryAR').addEventListener('click',function(){
+    if(!catalog)return;
+    try{sessionStorage.setItem('visor222-prototipo-catalogo',JSON.stringify(catalog));location.href='./index.html?local=1';}
+    catch(e){note('No se pudo transferir la configuración a la cámara. Reduce las imágenes o descarga el proyecto.');}
+  });
+  async function resized(file,width,type){
+    var im=await new Promise(function(resolve,reject){
+      var u=URL.createObjectURL(file),img=new Image();
+      img.onload=function(){URL.revokeObjectURL(u);resolve(img);};
+      img.onerror=function(){URL.revokeObjectURL(u);reject(Error('Imagen no válida'));};img.src=u;
+    });
+    var cv=document.createElement('canvas');cv.width=width;cv.height=Math.round(im.naturalHeight*width/im.naturalWidth);
+    var ctx=cv.getContext('2d');if(type==='image/jpeg'){ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);}
+    ctx.drawImage(im,0,0,cv.width,cv.height);return {src:cv.toDataURL(type,.86),ratio:cv.height/cv.width};
+  }
+  $('addPng').addEventListener('change',async function(){
+    var file=this.files[0];if(!file)return;
+    try{
+      if(file.type!=='image/png')throw Error('La nueva capa debe ser PNG con transparencia.');
+      var image=await resized(file,1024,'image/png');
+      if(Math.abs(image.ratio-aspect)>.01)throw Error('El PNG debe conservar la misma proporción de lienzo que el cuadro.');
+      var id='capa-'+Date.now().toString(36),l={id:id,nombre:file.name.replace(/\.png$/i,''),imagen:image.src,baseAncho:1,baseAlto:aspect,ancho:1,alto:aspect,x:0,y:0,z:.12,rotation:0,opacidad:1,visible:true,animacion:{tipo:'flotar',amplitud:.015,duracionMs:2500}};
+      article().capas.push(l);selectedId=l.id;render();note('PNG agregado. Guarda o exporta el borrador.');
+    }catch(e){note(e.message);}
+    this.value='';
+  });
+  $('changeTarget').addEventListener('change',async function(){
+    var file=this.files[0];if(!file)return;
+    try{var image=await resized(file,768,'image/jpeg');if(Math.abs(image.ratio-aspect)>.01)throw Error('La referencia debe tener la misma proporción del lienzo.');article().imagenObjetivo=image.src;render();note('Referencia física reemplazada en este borrador.');}
+    catch(e){note(e.message);}
+    this.value='';
+  });
+  async function loadDefault(){
+    try{var res=await fetch('./catalogo.json',{cache:'no-store'});if(!res.ok)throw Error('No se puede abrir catalogo.json');
+      catalog=normalize(await res.json());selectedId=article().capas[0].id;render();note('Cargado el cuadro del catálogo de desarrollo.');
+    }catch(e){note('Error al abrir el catálogo: '+e.message);}
+  }
+  try{
+    var saved=localStorage.getItem(draftKey);
+    if(saved){catalog=normalize(JSON.parse(saved));selectedId=article().capas[0].id;render();note('Recuperado tu borrador local.');}
+    else loadDefault();
+  }catch(err){localStorage.removeItem(draftKey);loadDefault();}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Visor-222 | Preparar cuadro Creeper</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#090f1c;color:#f3f7ff}
+    *{box-sizing:border-box}body{margin:0}
+    header{padding:22px 4vw;border-bottom:1px solid #22314c;display:flex;gap:18px;align-items:center;justify-content:space-between}
+    .brand{font-size:19px;font-weight:900;letter-spacing:-.04em}.brand b{color:#5bd9ff}
+    main{display:grid;grid-template-columns:minmax(320px,440px) minmax(320px,1fr);max-width:1320px;margin:auto;gap:24px;padding:24px}
+    section{background:#101c31;border:1px solid #2a3c58;border-radius:22px;padding:22px}
+    h1{font-size:27px;margin:0 0 10px}h2{font-size:18px;margin:0 0 16px}p{color:#aec2df;line-height:1.5;margin:0 0 18px}
+    label{font-size:13px;font-weight:700;display:block;margin:14px 0 7px}
+    input[type=file]{display:block;width:100%;border:1px dashed #5a769a;border-radius:12px;padding:11px;background:#0b1527;font-size:12px}
+    .hint{font-size:12px;color:#86a6ca;margin-top:8px}
+    .files{display:grid;gap:3px}
+    .line{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #283a56;padding:9px 0;font-size:13px}
+    .tag{font-size:11px;padding:4px 9px;border:1px solid #4b6688;border-radius:999px;color:#bcd5f1}
+    .small{font-size:12px;color:#99b2d3}
+    button{background:#51ccf5;border:0;border-radius:12px;padding:13px 18px;font-weight:800;color:#082036;cursor:pointer;font-size:14px}
+    button.secondary{background:#223650;color:#f3f8ff;border:1px solid #3c587a}button:disabled{cursor:not-allowed;opacity:.45}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+    .preview{aspect-ratio:1638/2047;max-width:530px;width:100%;margin:0 auto;background:#020407;position:relative;overflow:hidden;border:5px solid #283a50;border-radius:6px;box-shadow:0 25px 60px #0008}
+    .preview img{position:absolute;width:100%;height:100%;inset:0;object-fit:contain;pointer-events:none}
+    .preview .blank{position:absolute;inset:0;display:grid;place-items:center;color:#8ca5c7;font-size:15px;text-align:center;padding:30px}
+    .depth{display:flex;align-items:center;gap:10px;margin:15px 0}.depth input{flex:1}
+    .notice{padding:12px 14px;background:#142c3c;border:1px solid #335d6a;border-radius:12px;font-size:12px;line-height:1.5;color:#d4f5fa}
+    #status{font-size:12px;color:#a7dcfa;min-height:20px;margin-top:12px}
+    @media(max-width:850px){main{grid-template-columns:1fr;padding:14px}section{padding:16px}header{padding:15px}}
+  </style>
+</head>
+<body>
+<header><div class="brand">VISOR<b>·222</b> <span class="small">/ Editor de prueba</span></div><span class="tag">Rama v2 · no publicado</span></header>
+<main>
+<section>
+  <h1>Preparar cuadro Creeper</h1>
+  <p>Selecciona tus seis archivos originales en el orden indicado. No se envían a ningún servidor: se procesan en este navegador.</p>
+  <label for="printed">Imagen 6 · referencia exacta que se imprime</label>
+  <input id="printed" type="file" accept="image/png,image/jpeg,image/webp"/>
+  <div class="hint">Esta imagen se utiliza exclusivamente para reconocer el cuadro con la cámara.</div>
+  <div class="files" id="files"></div>
+  <div class="actions">
+    <button id="previewButton" class="secondary">Actualizar vista previa</button>
+    <button id="arButton" disabled>Probar con la cámara</button>
+    <button id="exportButton" class="secondary" disabled>Descargar catálogo</button>
+  </div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <div class="notice">Este editor es una herramienta de prueba local, no un panel con inicio de sesión. Las imágenes permanecen en tu navegador durante la preparación. La opción de cámara necesita HTTPS y un teléfono compatible.</div>
+</section>
+<section>
+  <h2>Vista previa de capas</h2>
+  <div class="preview" id="preview"><div class="blank">Selecciona la imagen impresa y los cinco PNG para ver la composición.</div></div>
+  <div class="depth">
+    <label for="depth" style="margin:0">Profundidad aparente</label>
+    <input id="depth" type="range" min="0" max="100" value="35"/>
+    <span id="depthValue" class="tag">35%</span>
+  </div>
+  <p class="small">Orden desde el fondo hasta el frente: capa 5 → capa 4 → capa 3 → capa 2 → capa 1. Cada capa conserva su lienzo completo de 1638 × 2047 (o su misma relación de aspecto).</p>
+</section>
+</main>
+<script>
+(function(){
+  'use strict';
+  var root=document.getElementById('files');
+  var preview=document.getElementById('preview');
+  var arButton=document.getElementById('arButton');
+  var exportButton=document.getElementById('exportButton');
+  var previewButton=document.getElementById('previewButton');
+  var status=document.getElementById('status');
+  var depth=document.getElementById('depth');
+  var expected=['Logo Minecraft','Creeper y TNT','Game Over','Grafitis y salpicaduras','Fondo amarillo'];
+  expected.forEach(function(name,i){
+    var wrap=document.createElement('div');
+    var lab=document.createElement('label');lab.htmlFor='layer'+(i+1);lab.textContent='Imagen '+(i+1)+' · '+name;
+    var inp=document.createElement('input');inp.type='file';inp.accept='image/png';inp.id='layer'+(i+1);
+    wrap.append(lab,inp);root.appendChild(wrap);
+  });
+  var orderedIds=[5,4,3,2,1], depths=[.015,.03,.05,.075,.105];
+  var animations=[
+    {tipo:'pulso',amplitud:.03,duracionMs:2800},
+    {tipo:'flotar',amplitud:.02,duracionMs:3400},
+    {tipo:'flotar',amplitud:.018,duracionMs:3000},
+    {tipo:'pulso',amplitud:.02,duracionMs:2400},
+    {tipo:'flotar',amplitud:.015,duracionMs:2100}
+  ];
+  var catalog=null;
+  function notify(s){status.textContent=s;}
+  function imageFromFile(file){
+    return new Promise(function(resolve,reject){
+      if(!file){reject(new Error('Falta seleccionar un archivo.'));return;}
+      var img=new Image();var url=URL.createObjectURL(file);
+      img.onload=function(){URL.revokeObjectURL(url);resolve(img);};
+      img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('No se puede abrir '+file.name));};
+      img.src=url;
+    });
+  }
+  async function downscale(file, format, targetWidth){
+    var img=await imageFromFile(file);
+    var c=document.createElement('canvas'),ratio=img.naturalHeight/img.naturalWidth;
+    c.width=targetWidth;c.height=Math.round(targetWidth*ratio);
+    var ctx=c.getContext('2d',{alpha:format!=='image/jpeg'});
+    if(format==='image/jpeg'){ctx.fillStyle='#000';ctx.fillRect(0,0,c.width,c.height);}
+    ctx.drawImage(img,0,0,c.width,c.height);
+    return {data:c.toDataURL(format,.82),ratio:ratio};
+  }
+  async function make(){
+    notify('Preparando imágenes…');arButton.disabled=true;exportButton.disabled=true;
+    var printed=document.getElementById('printed').files[0];
+    var files=expected.map(function(_,i){return document.getElementById('layer'+(i+1)).files[0];});
+    if(!printed || files.some(function(f){return !f;})){throw new Error('Debes seleccionar la imagen final y las cinco capas PNG.');}
+    for(var f of files){if(f.type!=='image/png')throw new Error('Las capas deben ser archivos PNG transparentes.');}
+    var target=await downscale(printed,'image/jpeg',768);
+    var layerData=await Promise.all(files.map(function(f){return downscale(f,'image/png',768);}));
+    for(var l of layerData){
+      if(Math.abs(l.ratio-target.ratio)>.005)throw new Error('Las capas y la imagen final deben compartir la misma proporción de lienzo.');
+    }
+    var layers=orderedIds.map(function(number,index){
+      return {
+        id:'capa-'+number, nombre:expected[number-1],
+        imagen:layerData[number-1].data,
+        x:0,y:0,z:depths[index],ancho:1,alto:target.ratio,opacidad:1,
+        animacion:animations[index]
+      };
+    });
+    catalog={
+      version:2,
+      titulo:'Visor-222 · Cuadro Creeper',
+      cuadros:[{
+        id:'cuadro-creeper-001',nombre:'Minecraft Creeper Graffiti',
+        targetIndex:0,relacionAltoAncho:target.ratio,
+        imagenObjetivo:target.data,capas:layers
+      }]
+    };
+    draw();
+    arButton.disabled=false;exportButton.disabled=false;
+    notify('Se prepararon los 6 archivos. Vista previa lista.');
+  }
+  function draw(){
+    preview.replaceChildren();
+    if(!catalog)return;
+    var picture=document.createElement('img');
+    picture.src=catalog.cuadros[0].imagenObjetivo;
+    picture.alt='Imagen final que se imprimirá';
+    preview.appendChild(picture);
+    var amount=Number(depth.value)/100;
+    document.getElementById('depthValue').textContent=depth.value+'%';
+    catalog.cuadros[0].capas.forEach(function(layer,index){
+      var node=document.createElement('img');
+      node.src=layer.imagen;
+      node.alt=layer.nombre;
+      node.style.transform='translate('+((index-2)*amount*2.2)+'px,'+((index-2)*amount*-2.2)+'px)';
+      node.style.zIndex=String(index+1);
+      preview.appendChild(node);
+    });
+  }
+  previewButton.addEventListener('click',function(){make().catch(function(err){notify(err.message);});});
+  depth.addEventListener('input',draw);
+  arButton.addEventListener('click',function(){
+    if(!catalog)return;
+    try {
+      sessionStorage.setItem('visor222-prototipo-catalogo',JSON.stringify(catalog));
+      location.href='./index.html?local=1';
+    } catch(err) { notify('No se pudieron guardar las imágenes temporalmente. Intenta con archivos más pequeños.');}
+  });
+  exportButton.addEventListener('click',function(){
+    if(!catalog)return;
+    var blob=new Blob([JSON.stringify(catalog)],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='cuadro-creeper-001.json';a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},2500);
+  });
+})();
+</script>
+</body>
+</html>

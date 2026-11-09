@@ -1,0 +1,35 @@
+name: Validar prototipo AR v2
+on:
+  push:
+    branches:
+      - desarrollo/multicuadros-ar-v2
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install
+      - name: Validar catálogo
+        run: |
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          const data=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
+          if(!data.archivoMind || !Array.isArray(data.cuadros) || !data.cuadros.length) throw Error('Catálogo incompleto');
+          const indexes=data.cuadros.map(x=>x.targetIndex);
+          if(indexes.some(x=>!Number.isInteger(x)||x<0) || new Set(indexes).size!==indexes.length) throw Error('Índices inválidos');
+          for(const c of data.cuadros) if(!Array.isArray(c.capas) || !c.id) throw Error('Cuadro sin ID o capas');
+          console.log('Catálogo validado:',data.cuadros.length,'cuadros');
+          "
+      - name: Compilar Vite
+        run: npm run build
+      - name: Comprobar visor generado
+        run: test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json

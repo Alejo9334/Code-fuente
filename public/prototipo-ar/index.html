@@ -368,16 +368,38 @@
     return data;
   }
 
-  var useLocal = new URLSearchParams(location.search).get('local') === '1';
-  var catalogPromise = useLocal
-    ? Promise.resolve().then(function(){
-        var saved = sessionStorage.getItem('visor222-prototipo-catalogo');
-        if(!saved)throw new Error('No hay imágenes cargadas. Regresa al editor de prueba.');
-        return JSON.parse(saved);
-      })
-    : fetch('./catalogo.json',{cache:'no-store'}).then(function(res){
-        if(!res.ok)throw new Error('No se encontró catalogo.json'); return res.json();
-      });
+  function readCameraProject(){
+    return new Promise(function(resolve,reject){
+      if(!window.indexedDB){reject(Error('Este navegador no permite guardar proyectos grandes.'));return;}
+      var request=indexedDB.open('visor222-pruebas-ar',1);
+      request.onupgradeneeded=function(){if(!request.result.objectStoreNames.contains('proyectos'))request.result.createObjectStore('proyectos');};
+      request.onerror=function(){reject(request.error||Error('No se pudo abrir el proyecto guardado'));};
+      request.onsuccess=function(){
+        var db=request.result;
+        var transaction=db.transaction('proyectos','readonly');
+        var query=transaction.objectStore('proyectos').get('visor-actual');
+        query.onsuccess=function(){
+          var data=query.result;db.close();
+          if(!data){reject(Error('El editor aún no ha enviado ningún proyecto AR.'));return;}
+          try{resolve(JSON.parse(data));}catch(err){reject(err);}
+        };
+        query.onerror=function(){db.close();reject(query.error||Error('No se pudo recuperar el proyecto'));};
+      };
+    });
+  }
+  var localMode = new URLSearchParams(location.search).get('local');
+  var useLocal = localMode === '1' || localMode === 'idb';
+  var catalogPromise = localMode === 'idb'
+    ? readCameraProject()
+    : useLocal
+      ? Promise.resolve().then(function(){
+          var saved=sessionStorage.getItem('visor222-prototipo-catalogo');
+          if(!saved)throw new Error('No hay imágenes cargadas. Regresa al editor.');
+          return JSON.parse(saved);
+        })
+      : fetch('./catalogo.json',{cache:'no-store'}).then(function(res){
+          if(!res.ok)throw new Error('No se encontró catalogo.json');return res.json();
+        });
 
   catalogPromise
     .then(async function(data){

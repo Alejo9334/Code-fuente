@@ -1,44 +1,93 @@
 {
-  "version": 1,
-  "titulo": "Visor-222 · Prototipo multimarcador",
-  "archivoMind": "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind",
+  "version": 2,
+  "titulo": "Visor-222 · Catálogo AR de cuadros",
+  "descripcion": "Primer cuadro real: cinco capas PNG y reconocimiento de la imagen impresa",
   "cuadros": [
     {
-      "id": "demo-001",
-      "nombre": "Cuadro de demostración",
+      "id": "cuadro-creeper-001",
+      "nombre": "Minecraft Creeper Graffiti",
       "targetIndex": 0,
-      "relacionAltoAncho": 0.552,
+      "relacionAltoAncho": 1.2496947,
+      "imagenObjetivo": "./cuadro-original.png.png",
       "capas": [
         {
-          "id": "halo",
-          "nombre": "Resplandor frontal",
-          "imagen": "demo:halo",
-          "ancho": 0.9,
-          "alto": 0.52,
+          "id": "capa-5",
+          "nombre": "Salpicaduras amarillas",
+          "imagen": "./capa-5.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
           "x": 0,
           "y": 0,
-          "z": 0.035,
-          "opacidad": 0.82,
-          "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.035,
-            "duracionMs": 2100
-          }
-        },
-        {
-          "id": "destellos",
-          "nombre": "Destellos en primer plano",
-          "imagen": "demo:destellos",
-          "ancho": 0.92,
-          "alto": 0.56,
-          "x": 0,
-          "y": 0,
-          "z": 0.095,
+          "z": 0.015,
           "opacidad": 1,
           "animacion": {
             "tipo": "pulso",
-            "amplitud": 0.12,
-            "duracionMs": 1450
+            "amplitud": 0.025,
+            "duracionMs": 2800
+          }
+        },
+        {
+          "id": "capa-4",
+          "nombre": "Graffiti y símbolos",
+          "imagen": "./capa-4.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.03,
+          "opacidad": 1,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.018,
+            "duracionMs": 3400
+          }
+        },
+        {
+          "id": "capa-3",
+          "nombre": "Game Over",
+          "imagen": "./capa-3.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.05,
+          "opacidad": 1,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.015,
+            "duracionMs": 3000
+          }
+        },
+        {
+          "id": "capa-2",
+          "nombre": "Creeper y TNT",
+          "imagen": "./capa-2.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.075,
+          "opacidad": 1,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0.018,
+            "duracionMs": 2400
+          }
+        },
+        {
+          "id": "capa-1",
+          "nombre": "Logo Minecraft",
+          "imagen": "./capa-1.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.105,
+          "opacidad": 1,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.012,
+            "duracionMs": 2100
           }
         }
       ]

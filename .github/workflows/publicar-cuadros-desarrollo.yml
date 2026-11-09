@@ -45,7 +45,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/prototipo-ar/catalogo.json public/prototipo-ar/cuadros/
+          git add -A -- public/prototipo-ar
           if git diff --cached --quiet; then
             echo "No hay cambios en el catálogo AR"
           else

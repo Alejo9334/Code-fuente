@@ -241,8 +241,23 @@
   }
 
   async function prepareScene(data) {
-    var targetSrc = data.archivoMind || await compileLocalTargets(data);
-    buildScene(data, targetSrc);
+    var targetSrc = null;
+    // El catálogo publicado usa los descriptores .mind precompilados.
+    // Los borradores con imágenes nuevas continúan con el compilador local.
+    if(data.archivoMind && data.compilador && data.compilador.cantidadObjetivos === data.cuadros.length) {
+      var locationMind = new URL(data.archivoMind,location.href);
+      try {
+        say('Cargando datos de reconocimiento optimizados…', 'Carga rápida');
+        var response=await fetch(locationMind.href,{method:'HEAD',cache:'force-cache'});
+        if(!response.ok)throw Error('No se encontró el archivo .mind publicado.');
+        targetSrc=locationMind.href;
+      }catch(err) {
+        console.warn('Archivo de reconocimiento precompilado no disponible; compilando en el dispositivo.',err);
+        say('Preparando reconocimiento de respaldo…', 'Respaldo');
+      }
+    }
+    if(!targetSrc)targetSrc=await compileLocalTargets(data);
+    buildScene(data,targetSrc);
   }
 
   function buildScene(data, targetSrc) {

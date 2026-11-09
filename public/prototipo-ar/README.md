@@ -135,3 +135,16 @@ node scripts/preparar-publicacion-ar.mjs proyectos/por-publicar.json --apply
 - Los cambios del catálogo publicado son visibles para cualquiera que visite Preview. No uses el repositorio público para contenidos privados o borradores sensibles.
 - Hay límites de 30 cuadros, 15 capas por cuadro, JSON de 24 MB y 8 MB por archivo incrustado. Las capas deben ser PNG.
 - El motor MindAR compila el reconocimiento en el navegador. El rendimiento, los tiempos de compilación y la precisión con varios cuadros físicos deben comprobarse en dispositivos reales. Posteriormente se puede incorporar compilación previa en `.mind`.
+
+## Optimización de reconocimiento de imágenes (MindAR .mind)
+
+El reconocimiento del catálogo publicado usa **`targets.mind` compilado previamente en GitHub Actions**, en lugar de extraer características de imágenes dentro del celular en cada visita. La documentación oficial de MindAR recomienda preprocesar las imágenes objetivo antes de cargar la aplicación.
+
+- Script offline: `scripts/compilar-objetivos-ar.mjs` (MindAR `OfflineCompiler`, Node.js + `canvas`). Conserva el orden de `targetIndex` de todos los cuadros, reescala referencias grandes a un máximo de 1200 px y guarda `targets.mind` junto a `catalogo.json`.
+- CI: `.github/workflows/compilar-ar.yml` compila y confirma `.mind` solo en `desarrollo/multicuadros-ar-v2`; su ejecución puede iniciarse manualmente desde **Actions**.
+- Publicación: `.github/workflows/publicar-cuadros-desarrollo.yml` genera `targets.mind` tras extraer los PNG y antes de confirmar el catálogo, para evitar desfases.
+- Visor: al abrir `index.html` comprueba que `archivoMind` esté disponible y carga esos datos precompilados. Si faltan, intenta el compilador local de respaldo.
+- Recursos: en catálogos con varios cuadros se descargan inicialmente únicamente los PNG del primer cuadro; las demás capas se solicitan cuando el cuadro correspondiente es reconocido. Esto evita una descarga masiva inicial.
+- Editor: si se agregan/eliminan/reordenan cuadros o cambia la imagen física, descarta el `.mind` anterior del borrador y recompila localmente durante la prueba AR.
+
+La primera compilación de prueba generó el objetivo Creeper en un archivo de ~484 KB. El tiempo real de apertura del visor depende del dispositivo, la red y el número de objetivos; la reducción aún requiere medición en celulares. No se ha cambiado `main` ni la aplicación comercial.

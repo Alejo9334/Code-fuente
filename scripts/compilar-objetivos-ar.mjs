@@ -1,13 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {loadImage,createCanvas} from 'canvas';
 import {OfflineCompiler} from 'mind-ar/src/image-target/offline-compiler.js';
 
 // Compilación anticipada de imágenes de reconocimiento en un runner Node.
 // Un único .mind mantiene exactamente el orden targetIndex del catálogo.
-const dirname=path.dirname(fileURLToPath(import.meta.url));
-const root=path.resolve(dirname,'..');
+const root=process.cwd();
 const base=path.join(root,'public','prototipo-ar');
 const catalogPath=path.join(base,'catalogo.json');
 const catalog=JSON.parse(await fs.readFile(catalogPath,'utf8'));

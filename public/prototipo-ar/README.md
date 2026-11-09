@@ -164,3 +164,15 @@ El sistema genera versiones **WebP con transparencia** de las capas PNG al publi
 **Primera medición con Minecraft:** cinco PNG originales ~4,08 MB → cinco WebP ~1,15 MB (**71,7 % menos bytes**), manteniendo 2200 × 2750 píxeles y transparencia. El ancho de banda real de una sesión puede variar por caché y conexión.
 
 **Importante:** algunas capas utilizan compresión de calidad 93 (con pequeñas diferencias de color posibles). Si una obra exige fidelidad cromática pixel a pixel, configura el script para elegir siempre WebP sin pérdida o conserva PNG. Comprueba visualmente los resultados en dispositivos reales antes de publicar a clientes.
+
+## Experiencia visual inmersiva para clientes
+
+Se incorporaron tres efectos exclusivamente en el visor público de desarrollo:
+
+1. **Confirmación de reconocimiento:** al recibir `targetFound` se ilumina brevemente una guía central azul con el mensaje «Imagen reconocida». Es una confirmación visual en pantalla, no un contorno que siga exactamente la silueta del objeto.
+2. **Entrada cinematográfica de capas:** una vez cargadas las texturas, cada capa aparece de fondo a frente con una breve transición de escala, acercamiento en profundidad y opacidad. La animación se aplica a un elemento padre independiente, conservando las animaciones individuales existentes. Se cancela al perder el objetivo y puede reproducirse al reencontrarlo.
+3. **Vista inmersiva:** botón «Pantalla completa» en la cámara. Si el navegador permite la Fullscreen API, se solicita pantalla completa; de lo contrario, se ocultan elementos secundarios y se mantiene el video AR ocupando todo el viewport. El botón «Cerrar cámara» permanece accesible.
+
+Las personas con la opción «reducir movimiento» habilitada reciben una confirmación estática y el contenido AR aparece sin transición. La experiencia no introduce sonidos ni cambia las referencias de MindAR, el archivo .mind o el comportamiento de los PNG del catálogo.
+
+Verificar en Android/iPhone real la disponibilidad de pantalla completa, la estabilidad del seguimiento y la transición de capas. Todo está publicado primero en Preview; la rama principal permanece intacta.

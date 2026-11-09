@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Capas AR - Editor y Visor de Realidad Aumentada</title>
+    <meta name="description" content="Crea escenas 3D por capas a partir de imágenes PNG y visualízalas en Realidad Aumentada sobre marcadores, QR o en modo Parallax y AR libre." />
+    <meta property="og:title" content="Capas AR - Editor y Visor de Realidad Aumentada" />
+    <meta property="og:description" content="Crea escenas 3D por capas a partir de imágenes PNG y visualízalas en Realidad Aumentada sobre marcadores, QR o en modo Parallax y AR libre." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Scripts CDN fijos solicitados -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+  </head>
+  <body class="bg-slate-900 text-slate-100 overflow-hidden select-none m-0 p-0 w-full h-full">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

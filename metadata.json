@@ -1,0 +1,6 @@
+{
+  "name": "Capas AR - Editor y Visor de Realidad Aumentada",
+  "description": "Crea escenas 3D por capas a partir de imágenes PNG y visualízalas en Realidad Aumentada sobre marcadores, QR o en modo Parallax y AR libre.",
+  "requestFramePermissions": ["camera", "accelerometer", "gyroscope"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

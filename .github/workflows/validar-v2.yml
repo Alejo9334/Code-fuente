@@ -23,10 +23,17 @@ jobs:
           node --input-type=module -e "
           import fs from 'node:fs';
           const data=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
-          if(!data.archivoMind || !Array.isArray(data.cuadros) || !data.cuadros.length) throw Error('Catálogo incompleto');
+          if(!Array.isArray(data.cuadros) || !data.cuadros.length) throw Error('Catálogo incompleto');
           const indexes=data.cuadros.map(x=>x.targetIndex);
           if(indexes.some(x=>!Number.isInteger(x)||x<0) || new Set(indexes).size!==indexes.length) throw Error('Índices inválidos');
-          for(const c of data.cuadros) if(!Array.isArray(c.capas) || !c.id) throw Error('Cuadro sin ID o capas');
+          for(const c of data.cuadros) {
+            if(!Array.isArray(c.capas) || !c.id || !c.capas.length) throw Error('Cuadro sin ID o capas');
+            if(!data.archivoMind && !c.imagenObjetivo) throw Error('Cuadro sin imagen de referencia');
+            if(c.imagenObjetivo && !fs.existsSync('public/prototipo-ar/'+c.imagenObjetivo.replace(/^\.\//,''))) throw Error('Archivo de referencia no encontrado: '+c.imagenObjetivo);
+            for(const layer of c.capas) {
+              if(!fs.existsSync('public/prototipo-ar/'+layer.imagen.replace(/^\.\//,''))) throw Error('Capa faltante: '+layer.imagen);
+            }
+          }
           console.log('Catálogo validado:',data.cuadros.length,'cuadros');
           "
       - name: Compilar Vite

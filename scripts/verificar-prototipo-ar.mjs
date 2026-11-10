@@ -184,7 +184,7 @@ for(const expected of ['pivotOffsetX','pivotOffsetY','rotation.set(wrapper.baseR
 for(const expected of ['id="scaleX"','id="scaleY"','id="animationType"','value="desplazar"','value="balancear"','@keyframes slideX','@keyframes rock3d','max="0.08"','max="3"','max="15000"','espaciadoCapas=Math.max(0,Math.min(.08','escalaX','escalaY']){
   assert.ok(emergingEditor.includes(expected),'Falta control ampliado o animación independiente: '+expected);
 }
-for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","spec.type==='trayectoria'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type<0 || type>5"]){
+for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","spec.type==='trayectoria'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type>(version===3?6:5)"]){
   assert.ok(emergingViewer.includes(expected),'El visor AR no procesa el nuevo ajuste: '+expected);
 }
 for(const expected of ["'desplazar','balancear'","separacionZ:Math.max(-.08","espaciadoCapas:Math.max(0,Math.min(.08","escalaX:Math.max(.25","escalaY:Math.max(.25"]){

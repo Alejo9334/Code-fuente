@@ -422,7 +422,9 @@
         group.wrappers.forEach(function(wrapper){
           var spec=wrapper.motionSpec||{};
           var base=wrapper.basePosition||{x:0,y:0,z:-.055};
-          var dx=parallaxCurrent.x*parallaxScale,dy=-parallaxCurrent.y*parallaxScale,dz=0;
+          var relativeDepth=Math.max(0,Math.min(1,Number(wrapper.depthFactor)||0));
+          var depthParallax=.2+.8*relativeDepth;
+          var dx=parallaxCurrent.x*parallaxScale*depthParallax,dy=-parallaxCurrent.y*parallaxScale*depthParallax,dz=0;
           var phase=(elapsed/Math.max(.1,spec.period||2))*Math.PI*2+(spec.phase||0);
           var wave=Math.sin(phase);
           if(spec.type==='flotar'){
@@ -589,7 +591,7 @@
         var physicalDepth=Math.max(0,Math.min(.75,effectiveDepth-minDepth));
         var type=['flotar','pulso','girar','desplazar','balancear','trayectoria'].includes(anim.tipo)?anim.tipo:'ninguna';
         var amplitude=Math.abs(Number(anim.amplitud)||0);
-        var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
+        var period=Math.max(.4,Math.min(15,(Number(anim.duracionMs)||2400)/1000));
         wrapper.depthFactor=depth;
         var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined ? 0.5 : layer.pivotX)));
         var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined ? 0.5 : layer.pivotY)));

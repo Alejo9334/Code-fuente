@@ -665,7 +665,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   });
   $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;checkpoint();article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
   $('save').addEventListener('click',persist);
-  $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;localStorage.removeItem(draftKey);loadDefault();});
+  $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;undoStack=[];redoStack=[];historyActive=false;updateHistoryButtons();localStorage.removeItem(draftKey);loadDefault();});
   $('export').addEventListener('click',function(){
     if(!catalog)return;
     var blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});
@@ -915,7 +915,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       if(creationMode==='clone') {
         var old=article();
         if(Math.abs(old.relacionAltoAncho-ratio)>.01)throw Error('Para duplicar, la nueva imagen debe tener la misma proporción que el cuadro original.');
-        layers=old.capas.map(function(l){return Object.assign({},l,{animacion:Object.assign({},l.animacion)});});
+        layers=old.capas.map(function(l){return Object.assign({},l,{sombra:Object.assign({},l.sombra),animacion:Object.assign({},l.animacion,{trayectoria:Object.assign({},l.animacion&&l.animacion.trayectoria)})});});
       } else {
         var files=Array.from($('createLayers').files);
         if(!files.length)throw Error('Selecciona al menos una capa PNG.');

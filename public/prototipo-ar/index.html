@@ -373,7 +373,6 @@
         });
         return;
       }
-      if(settings.flash)pulseRecognition();
       var startTime=null;
       var delayBetween=Math.min(110,settings.duration*.075);
       var perLayerDuration=Math.max(380,settings.duration-delayBetween*(group.wrappers.length-1));
@@ -424,7 +423,7 @@
       target.addEventListener('targetFound', function () {
         tracked.add(art.id);
         document.body.classList.add('detected');
-        if(emergenceSettings(art).destello!==false)pulseRecognition();
+        if(emergenceSettings(art).flash)pulseRecognition();
         var trackingVersion=group.sequence;
         if(!group.loaded) {
           say('Imagen reconocida. Cargando capas de '+art.nombre+'…','Cargando capas');

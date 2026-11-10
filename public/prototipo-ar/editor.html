@@ -937,9 +937,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
         relacionAltoAncho:ratio,imagenObjetivo:target.src,espaciadoCapas:.02,capas:layers,
         efectoEmergencia:normalizeEmergence()
       };
-      catalog.cuadros.push(art);reindex();invalidateTracking();
+      checkpoint();catalog.cuadros.push(art);reindex();invalidateTracking();
       selectedArtId=art.id;selectedId=art.capas[0].id;render();
-      checkpoint();
       $('createDialog').close();
       note('Cuadro «'+art.nombre+'» agregado al borrador. Guarda y exporta el JSON como respaldo.');
     }catch(err){$('createStatus').textContent=err.message;note(err.message);}

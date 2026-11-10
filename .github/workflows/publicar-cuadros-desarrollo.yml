@@ -18,6 +18,7 @@ concurrency:
 jobs:
   publicar:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Obtener rama de desarrollo
         uses: actions/checkout@v4
@@ -33,46 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          FILE=$(git show --pretty=format: --name-only "$GITHUB_SHA" | grep -E '^proyectos/pendientes/[a-z0-9-]+\.json
-      - name: Instalar compilador MindAR en entorno aislado
-        run: |
-          mkdir -p .ar-tools
-          npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5 sharp@0.34.4
-          cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
-          cp scripts/optimizar-imagenes-ar.mjs .ar-tools/optimizar.mjs
-      - name: Optimizar PNG para publicar versiones livianas
-        run: node .ar-tools/optimizar.mjs
-      - name: Precompilar reconocimiento de todos los cuadros
-        run: node .ar-tools/compilar.mjs
-      - name: Validar catálogo publicado y estructura
-        run: |
-          node --input-type=module -e "
-          import fs from 'node:fs';
-          const base='public/prototipo-ar/';
-          const p=JSON.parse(fs.readFileSync(base+'catalogo.json','utf8'));
-          if(!p.cuadros.length)throw Error('Catálogo vacío');
-          for(const art of p.cuadros){
-            if(!fs.existsSync(base+art.imagenObjetivo.slice(2)))throw Error('Falta imagen objetivo: '+art.id);
-            for(const layer of art.capas)if(!fs.existsSync(base+layer.imagen.slice(2)))throw Error('Falta PNG: '+layer.id);
-          }
-          "
-      - name: Confirmar publicación SOLO en desarrollo
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- public/prototipo-ar
-          if git diff --cached --quiet; then
-            echo "No hay cambios en el catálogo AR"
-          else
-            git commit -m "Publicar cuadros AR y objetivos precompilados en desarrollo"
-            for intento in 1 2 3; do
-              git fetch origin desarrollo/multicuadros-ar-v2
-              git rebase FETCH_HEAD
-              if git push origin HEAD:desarrollo/multicuadros-ar-v2; then exit 0; fi
-            done
-            exit 1
-          fi
- | head -1 || true)
+          FILE=$(git show --pretty=format: --name-only "$GITHUB_SHA" | grep -E '^proyectos/pendientes/[a-z0-9-]+[.]json$' | head -1 || true)
           if [[ -n "$FILE" ]]; then
             test -f "$FILE"
             echo "archivo=$FILE" >> "$GITHUB_OUTPUT"
@@ -87,49 +49,53 @@ jobs:
           fi
       - name: Validar y convertir archivos del proyecto
         shell: bash
+        env:
+          PROJECT_FILE: ${{ steps.solicitud.outputs.archivo }}
+          PROJECT_MODE: ${{ steps.solicitud.outputs.modo }}
         run: |
           set -euo pipefail
-          FILE="${{ steps.solicitud.outputs.archivo }}"
-          if [[ "${{ steps.solicitud.outputs.modo }}" == "agregar" ]]; then
-            node scripts/preparar-publicacion-ar.mjs "$FILE" --apply --append
+          if [[ "$PROJECT_MODE" == "agregar" ]]; then
+            node scripts/preparar-publicacion-ar.mjs "$PROJECT_FILE" --apply --append
           else
-            node scripts/preparar-publicacion-ar.mjs "$FILE" --apply
+            node scripts/preparar-publicacion-ar.mjs "$PROJECT_FILE" --apply
           fi
-      - name: Instalar compilador MindAR en entorno aislado
+      - name: Instalar herramientas AR
         run: |
           mkdir -p .ar-tools
           npm install --prefix .ar-tools --no-package-lock --no-save mind-ar@1.2.5 sharp@0.34.4
           cp scripts/compilar-objetivos-ar.mjs .ar-tools/compilar.mjs
           cp scripts/optimizar-imagenes-ar.mjs .ar-tools/optimizar.mjs
-      - name: Optimizar PNG para publicar versiones livianas
+      - name: Optimizar PNG
         run: node .ar-tools/optimizar.mjs
-      - name: Precompilar reconocimiento de todos los cuadros
+      - name: Compilar reconocimiento
         run: node .ar-tools/compilar.mjs
-      - name: Validar catálogo publicado y estructura
+      - name: Validar archivos listos para publicar
         run: |
           node --input-type=module -e "
           import fs from 'node:fs';
           const base='public/prototipo-ar/';
           const p=JSON.parse(fs.readFileSync(base+'catalogo.json','utf8'));
-          if(!p.cuadros.length)throw Error('Catálogo vacío');
+          if(!Array.isArray(p.cuadros)||!p.cuadros.length||p.cuadros.length>30)throw Error('Catálogo incorrecto');
+          if(p.archivoMind!=='./targets.mind'||!fs.existsSync(base+'targets.mind'))throw Error('Falta .mind');
           for(const art of p.cuadros){
-            if(!fs.existsSync(base+art.imagenObjetivo.slice(2)))throw Error('Falta imagen objetivo: '+art.id);
-            for(const layer of art.capas)if(!fs.existsSync(base+layer.imagen.slice(2)))throw Error('Falta PNG: '+layer.id);
+            if(!fs.existsSync(base+art.imagenObjetivo.slice(2)))throw Error('Referencia inexistente: '+art.id);
+            for(const layer of art.capas)if(!fs.existsSync(base+layer.imagen.slice(2)))throw Error('Falta capa: '+layer.id);
           }
           "
-      - name: Confirmar publicación SOLO en desarrollo
+      - name: Confirmar SOLO en rama de desarrollo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- public/prototipo-ar
           if git diff --cached --quiet; then
-            echo "No hay cambios en el catálogo AR"
+            echo "Los archivos AR ya están actualizados."
           else
-            git commit -m "Publicar cuadros AR y objetivos precompilados en desarrollo"
+            git commit -m "Publicar nuevas imágenes AR optimizadas solo en desarrollo"
             for intento in 1 2 3; do
               git fetch origin desarrollo/multicuadros-ar-v2
               git rebase FETCH_HEAD
               if git push origin HEAD:desarrollo/multicuadros-ar-v2; then exit 0; fi
             done
+            echo "La publicación requiere resolver cambios simultáneos." >&2
             exit 1
           fi

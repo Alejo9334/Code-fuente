@@ -56,7 +56,6 @@ jobs:
           if(!original.cuadros.some(art=>art.id==='cuadro-creeper-001')) throw Error('El catálogo original debe conservar el cuadro base');
           "
           git diff --exit-code -- public/prototipo-ar/catalogo.json
-          "
 
       - name: Validar carga incremental sin publicación real
         run: |

@@ -636,7 +636,7 @@
       throw new Error('Formato de vista previa no reconocido.');
     }
     var packetVersion=packet[0];
-    var globalGap=packetVersion===2?packet[2]:art&&art.espaciadoCapas;
+    var globalGap;
     var rows=packetVersion===2?packet[3]:packet[2];
     var art=data.cuadros.find(function(x){return x.id===packet[1];});
     if(!art)throw new Error('Este cuadro no está registrado en la vista previa.');

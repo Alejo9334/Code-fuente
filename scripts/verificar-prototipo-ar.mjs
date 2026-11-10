@@ -164,4 +164,12 @@ for(const expected of ['emergenceEnabled','emergenceDuration','emergenceScale','
 }
 assert.ok(emergingPublisher.includes('efectoEmergencia:emergence'),'El publicador debe preservar la emergencia de cada cuadro');
 assert.ok(emergingViewer.includes("target.addEventListener('targetFound'"),'Conservar el motor de detección de imágenes');
+for(const expected of ['data-view="perspectiva"','data-view="lateral"','data-view="superior"','id="layerSpacing"','id="layerSpacingExtra"','function setEditorView','translateZ('+ 'effectiveZ*260' + 'px)','espaciadoCapas','separacionZ']){
+  assert.ok(emergingEditor.includes(expected),'Falta control de lienzo 3D/separación: '+expected);
+}
+assert.ok(emergingPublisher.includes('espaciadoCapas:'),'El publicador debe conservar la separación global');
+assert.ok(emergingPublisher.includes('separacionZ:'),'El publicador debe conservar la separación individual');
+assert.ok(emergingViewer.includes('var globalGap='),'El visor debe aplicar separación global');
+assert.ok(emergingViewer.includes('physicalDepth*.22'),'El visor debe convertir la separación guardada en profundidad AR');
+console.log('Lienzo 3D, vistas y separación global/individual verificadas de editor a visor');
 console.log('Efecto 2.5D cinematográfico y configuración por cuadro preservados desde editor hasta visor');

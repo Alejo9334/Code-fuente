@@ -87,12 +87,17 @@ const output={
       }
       if(l.ancho<=0||l.alto<=0||Math.abs(l.x)>1||Math.abs(l.y)>1||l.z<0||l.z>1||l.opacidad<0||l.opacidad>1)
         throw Error('Dimensiones fuera de rango: '+layerId);
-      const a=l.animacion||{},type=['ninguna','flotar','pulso','girar'].includes(a.tipo)?a.tipo:'ninguna';
+      const a=l.animacion||{},type=['ninguna','flotar','pulso','girar','desplazar','balancear'].includes(a.tipo)?a.tipo:'ninguna';
       return {
         id:layerId,nombre:String(l.nombre||layerId).slice(0,100),imagen:image,
         ancho:Number(l.ancho),alto:Number(l.alto),x:Number(l.x),y:Number(l.y),z:Number(l.z),
         rotation:Number(l.rotation||0),opacidad:Number(l.opacidad),
-        separacionZ:Math.max(-.03,Math.min(.03,Number.isFinite(Number(l.separacionZ))?Number(l.separacionZ):0)),
+        baseAncho:Number.isFinite(Number(l.baseAncho))?Number(l.baseAncho):Number(l.ancho),
+        baseAlto:Number.isFinite(Number(l.baseAlto))?Number(l.baseAlto):Number(l.alto),
+        escalaUniforme:Math.max(.25,Math.min(3,Number.isFinite(Number(l.escalaUniforme))?Number(l.escalaUniforme):1)),
+        escalaX:Math.max(.25,Math.min(3,Number.isFinite(Number(l.escalaX))?Number(l.escalaX):1)),
+        escalaY:Math.max(.25,Math.min(3,Number.isFinite(Number(l.escalaY))?Number(l.escalaY):1)),
+        separacionZ:Math.max(-.08,Math.min(.08,Number.isFinite(Number(l.separacionZ))?Number(l.separacionZ):0)),
         visible:l.visible!==false,
         animacion:{
           tipo:type,amplitud:Number.isFinite(Number(a.amplitud))?Number(a.amplitud):0,
@@ -110,7 +115,7 @@ const output={
     };
     return {id,nombre:String(art.nombre||id).slice(0,100),targetIndex:index,
       relacionAltoAncho:ratio,imagenObjetivo:target,
-      espaciadoCapas:Math.max(0,Math.min(.025,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.01)),
+      espaciadoCapas:Math.max(0,Math.min(.08,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.02)),
       capas:layers,efectoEmergencia:emergence};
   })
 };

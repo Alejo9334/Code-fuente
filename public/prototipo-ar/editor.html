@@ -101,13 +101,15 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="field" style="margin-top:11px"><label for="artTitle">Nombre del cuadro seleccionado</label><input id="artTitle" type="text" maxlength="100"></div>
 <div class="group-label">Capas · fondo → frente</div>
 <div class="layerlist" id="layerlist"></div>
+<div class="controls full"><button id="applyDepthPreset" class="subtle" type="button">Aplicar profundidad + movimiento 2.5D</button></div>
+<p class="muted">Distribuye las capas desde el fondo hasta el frente y asigna movimientos distintos. Puedes seguir ajustando cada PNG individualmente.</p>
 <div class="group-label">Añadir archivos</div>
 <div class="field"><label for="addPng">Agregar capas PNG (selección múltiple)</label><input id="addPng" type="file" accept="image/png" multiple></div>
 <div class="field" style="margin-top:12px"><label for="changeTarget">Cambiar imagen impresa</label><input id="changeTarget" type="file" accept="image/png,image/jpeg,image/webp"></div>
 <div class="group-label">Efecto de aparición · Cuadro seleccionado</div>
 <div class="field"><label class="switch" for="emergenceEnabled"><input id="emergenceEnabled" type="checkbox" checked> Emergencia cinematográfica 2.5D</label></div>
-<div class="field"><label for="emergenceDuration">Duración <output id="emergenceDurationVal">1.4 s</output></label><input id="emergenceDuration" type="range" min="500" max="3000" step="100" value="1400"></div>
-<div class="field"><label for="emergenceScale">Escala inicial <output id="emergenceScaleVal">70%</output></label><input id="emergenceScale" type="range" min="40" max="100" step="5" value="70"></div>
+<div class="field"><label for="emergenceDuration">Duración <output id="emergenceDurationVal">1.4 s</output></label><input id="emergenceDuration" type="range" min="500" max="3000" step="100" value="1600"></div>
+<div class="field"><label for="emergenceScale">Escala inicial <output id="emergenceScaleVal">70%</output></label><input id="emergenceScale" type="range" min="40" max="100" step="5" value="62"></div>
 <div class="field"><label for="emergenceIntensity">Profundidad de salida</label><select id="emergenceIntensity"><option value="suave">Sutil</option><option value="media">Media</option><option value="cinematografica" selected>Cinematográfica</option></select></div>
 <div class="field"><label class="switch" for="emergenceFlash"><input id="emergenceFlash" type="checkbox" checked> Destello de activación</label></div>
 <p class="muted">Las capas salen desde detrás de la imagen y terminan en la profundidad Z que ya configuraste. Las animaciones individuales se conservan.</p>
@@ -207,8 +209,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
   function reindex(){catalog.cuadros.forEach(function(a,i){a.targetIndex=i;});}
   function normalizeEmergence(value){
     var p=value||{};
-    return {activo:p.activo!==false,duracionMs:Math.max(500,Math.min(3000,Number(p.duracionMs)||1400)),
-      escalaInicial:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.7)),
+    return {activo:p.activo!==false,duracionMs:Math.max(500,Math.min(3000,Number(p.duracionMs)||1600)),
+      escalaInicial:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.62)),
       intensidad:['suave','media','cinematografica'].includes(p.intensidad)?p.intensidad:'cinematografica',
       destello:p.destello!==false};
   }
@@ -393,6 +395,20 @@ dialog h2{font-size:21px;margin:0 0 8px}
   $('toBack').addEventListener('click',function(){move(-1);});
   $('toFront').addEventListener('click',function(){move(1);});
   function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
+  $('applyDepthPreset').addEventListener('click',function(){
+    var art=article(),layers=art&&art.capas;
+    if(!layers||layers.length<2){note('Agrega al menos dos capas para distribuir la profundidad.');return;}
+    if(!confirm('Este preset distribuirá la profundidad Z y asignará movimientos diferentes a todas las capas. Podrás personalizarlas después. ¿Continuar?'))return;
+    var types=['flotar','pulso','girar'];
+    layers.forEach(function(layer,index){
+      var t=index/Math.max(1,layers.length-1),type=types[index%types.length];
+      layer.z=Number((.015+t*.22).toFixed(3));
+      var amplitude=type==='girar'?Number((4+t*6).toFixed(1)):Number((.012+t*.018).toFixed(3));
+      layer.animacion={tipo:type,amplitud:amplitude,duracionMs:Math.round(3400-t*1300)};
+    });
+    render();persist();
+    note('Preset 2.5D aplicado: profundidad escalonada y movimientos independientes. Ajusta cada capa si lo necesitas.');
+  });
   $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
   $('save').addEventListener('click',persist);
   $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;localStorage.removeItem(draftKey);loadDefault();});

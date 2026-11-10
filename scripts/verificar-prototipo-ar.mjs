@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html', 'public/prototipo-ar/optimizar.html', 'public/prototipo-ar/preparar-imagen.html']) {
   const html = fs.readFileSync(filename, 'utf8');
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
-  if(filename.endsWith('/login.html'))assert.ok(html.includes('url=./editor.html'),'La antigua página de acceso debe redirigir al editor local');
+  if(filename.endsWith('/login.html')||filename.endsWith('/preparar-imagen.html'))assert.ok(html.includes('url=./editor.html'),'Las rutas anteriores deben redirigir al editor unificado');
   else assert.ok(scripts.length > 0, filename + ' must include a script');
   for (const [, source] of scripts) {
     if (source.trim()) new vm.Script(source, { filename });
@@ -139,9 +139,12 @@ assert.ok(cinematic.includes('La magia está frente a ti'),'Debe mantenerse el m
 assert.ok(cinematic.includes('Activa tu cámara y observa cómo las imágenes cobran vida ante tus ojos.'),'Debe mantenerse la descripción de bienvenida');
 console.log('Confirmación de reconocimiento, revelado cinematográfico y modo inmersivo incluidos.');
 
-const imageUploader=fs.readFileSync('public/prototipo-ar/preparar-imagen.html','utf8');
-for(const expected of ['FileReader','imagenObjetivo','capas:layers.map','application/json','proyectos/pendientes','layerFiles','referencePreview','GitHub']){
-  assert.ok(imageUploader.includes(expected),'El preparador de imágenes debe incluir '+expected);
+const unifiedEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
+for(const expected of ['createLayers','createTarget','addPng','multiple','publishSelected','publishSidebar','publishDialog','downloadPublish','sourceAsDataURL','publicationSlug','proyectos/pendientes','application/json','GitHub','published.cuadros.some']){
+  assert.ok(unifiedEditor.includes(expected),'El editor unificado necesita '+expected);
 }
-assert.ok(!imageUploader.includes('Authorization: Bearer'),'El panel público no debe solicitar credenciales de GitHub');
-console.log('Carga asistida de imágenes sin tokens en navegador verificada');
+assert.ok(!unifiedEditor.includes('Authorization: Bearer'),'El editor público no debe integrar tokens GitHub');
+assert.ok(!unifiedEditor.includes('VISOR222_ADMIN'),'La edición local debe funcionar sin Supabase');
+const oldPrepare=fs.readFileSync('public/prototipo-ar/preparar-imagen.html','utf8');
+assert.ok(oldPrepare.includes('url=./editor.html'),'El panel anterior debe redirigir al editor unificado');
+console.log('Carga, animaciones y exportación segura a GitHub integradas en un solo editor.');

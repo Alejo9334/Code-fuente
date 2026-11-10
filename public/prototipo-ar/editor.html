@@ -99,7 +99,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <button class="subtle" id="export">Descargar proyecto JSON</button>
 <button class="subtle" id="shareAR">Probar en mi celular · QR</button>
 <button id="tryAR">Probar en cámara AR</button>
-<button id="publishSelected" class="subtle" type="button">Preparar publicación en GitHub</button>
+<button id="updatePublished" class="subtle" type="button">↻ Actualizar experiencia publicada</button>\n<button id="publishSelected" class="subtle" type="button">Preparar publicación en GitHub</button>
 </div>
 </header>
 <div class="wrap">
@@ -231,6 +231,17 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div id="publishReady" hidden>
 <a class="editor-link" id="publishGithub" href="https://github.com/Alejo9334/Visor-222/upload/desarrollo/multicuadros-ar-v2/proyectos/pendientes" target="_blank" rel="noopener noreferrer">Abrir GitHub para subir el JSON</a>
 <p class="muted">En GitHub, sube el JSON descargado a la carpeta <code>proyectos/pendientes/</code> de la rama de desarrollo y confirma «Commit changes». El flujo automático compilará el reconocimiento y optimizará las imágenes. La vista Preview se actualizará tras su despliegue.</p>
+</div>
+</dialog>
+<dialog id="updateDialog" aria-labelledby="updateTitle">
+<h2 id="updateTitle">Actualizar experiencia publicada</h2>
+<p class="muted">Actualiza capas PNG, posiciones, profundidad, rotaciones, sombras y animaciones de este cuadro. Se conserva la misma imagen de referencia para que el cliente siga escaneando el mismo cuadro.</p>
+<p class="notice">Se genera un JSON seguro de actualización. Debes subirlo a GitHub y confirmar el commit para publicar; guardar el borrador no actualiza al cliente. La imagen física de reconocimiento no puede cambiarse con esta opción.</p>
+<div id="updateStatus" class="status" role="status" aria-live="polite">Selecciona una experiencia ya publicada.</div>
+<div class="dialog-buttons"><button id="downloadUpdate" type="button">Descargar actualización</button><button class="subtle" id="closeUpdate" type="button">Cerrar</button></div>
+<div id="updateReady" hidden>
+<a id="updateGithub" class="editor-link" href="https://github.com/Alejo9334/Code-fuente/upload/desarrollo/multicuadros-ar-v2/proyectos/actualizaciones" target="_blank" rel="noopener noreferrer">Abrir GitHub para publicar cambios</a>
+<p class="muted">Sube el archivo JSON descargado en <code>proyectos/actualizaciones/</code> y confirma «Commit changes». GitHub actualizará únicamente esta experiencia. El cliente verá la nueva versión al volver a abrir o recargar el visor cuando la publicación termine.</p>
 </div>
 </dialog>
 <dialog id="shareDialog" aria-labelledby="shareTitle">
@@ -785,6 +796,61 @@ dialog h2{font-size:21px;margin:0 0 8px}
       note('Paquete generado. Falta subirlo desde tu cuenta de GitHub; todavía no está publicado.');
     }catch(err){$('publishStatus').textContent='No se generó el paquete: '+err.message;note(err.message);}
     finally{btn.disabled=false;}
+  });
+
+  // Actualiza solo una experiencia publicada, sin credenciales privadas en el navegador.
+  $('updatePublished').addEventListener('click',function(){
+    if(!article()){note('Selecciona primero un cuadro.');return;}
+    $('updateReady').hidden=true;
+    $('updateStatus').textContent='Experiencia seleccionada: '+article().nombre+'.';
+    $('updateDialog').showModal();
+  });
+  $('closeUpdate').addEventListener('click',function(){$('updateDialog').close();});
+  $('downloadUpdate').addEventListener('click',async function(){
+    var button=this;
+    if(!article())return;
+    button.disabled=true;$('updateReady').hidden=true;
+    try{
+      var art=article();
+      var id=publicationSlug(art.id);
+      if(!id||art.capas.length<1||art.capas.length>15)throw Error('Se requieren entre 1 y 15 capas PNG.');
+      $('updateStatus').textContent='Comprobando la versión publicada de '+art.nombre+'…';
+      var response=await fetch('./catalogo.json',{cache:'no-store'});
+      if(!response.ok)throw Error('No se pudo consultar el catálogo del visor. Comprueba tu conexión.');
+      var remote=await response.json();
+      var original=remote.cuadros.find(function(x){return x.id===id;});
+      if(!original)throw Error('Este cuadro aún no está publicado. Utiliza «Preparar publicación en GitHub» para cuadros nuevos.');
+      if(art.imagenObjetivo!==original.imagenObjetivo)
+        throw Error('Se modificó la imagen física de referencia. Para actualizar este cuadro, conserva la referencia original; este botón solo actualiza sus capas y efectos.');
+      var copy=JSON.parse(JSON.stringify(art));
+      copy.id=id;
+      copy.imagenObjetivo=original.imagenObjetivo;
+      copy.relacionAltoAncho=original.relacionAltoAncho;
+      for(var i=0;i<copy.capas.length;i++){
+        var layer=copy.capas[i];
+        if(!publicationSlug(layer.id))throw Error('Identificador de capa inválido.');
+        $('updateStatus').textContent='Preparando PNG '+(i+1)+' de '+copy.capas.length+'…';
+        layer.imagen=await sourceAsDataURL(layer.imagen,'layer');
+      }
+      var bytesHash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(original)));
+      var baseHash=Array.from(new Uint8Array(bytesHash)).map(function(v){return v.toString(16).padStart(2,'0');}).join('');
+      var payload={version:3,operacion:'actualizar',baseHash:baseHash,cuadros:[copy]};
+      var encoded=JSON.stringify(payload);
+      var size=new TextEncoder().encode(encoded).length;
+      if(size>24*1024*1024)throw Error('La actualización supera 24 MB. Reduce el peso de los PNG.');
+      var filename='actualizar-'+id+'-'+new Date().toISOString().replace(/[:.]/g,'-').toLowerCase()+'.json';
+      var blob=new Blob([encoded],{type:'application/json'});
+      var url=URL.createObjectURL(blob);
+      var link=document.createElement('a');link.href=url;link.download=filename;
+      document.body.append(link);link.click();link.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},60000);
+      $('updateReady').hidden=false;
+      $('updateStatus').textContent='Archivo listo: '+filename+' ('+(size/1048576).toFixed(2)+' MB). Falta subirlo en GitHub. El visor público todavía no ha cambiado.';
+      note('Actualización descargada; confirma la publicación en GitHub para que los clientes la reciban.');
+    }catch(err){
+      $('updateStatus').textContent='No se pudo preparar la actualización: '+err.message;
+      note(err.message);
+    }finally{button.disabled=false;}
   });
 
   $('importButton').addEventListener('click',function(){$('importFile').click();});

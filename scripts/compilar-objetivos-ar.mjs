@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {loadImage,createCanvas} from 'canvas';
 import {OfflineCompiler} from 'mind-ar/src/image-target/offline-compiler.js';
 
@@ -41,7 +42,10 @@ await compiler.compileImageTargets(images,progress=>{
 const bytes=await compiler.exportData();
 if(!bytes||bytes.length<100)throw Error('El compilador devolvió un archivo vacío');
 const filename='targets.mind';
-await fs.writeFile(path.join(base,filename),Buffer.from(bytes));
+const targetBytes=Buffer.from(bytes);
+await fs.writeFile(path.join(base,filename),targetBytes);
+// Huella única para invalidar la caché del navegador cuando cambian los objetivos.
+catalog.cacheKey=createHash('sha256').update(targetBytes).digest('hex').slice(0,16);
 catalog.archivoMind='./'+filename;
 catalog.compilador={motor:'mind-ar',version:'1.2.5',cantidadObjetivos:pictures.length};
 await fs.writeFile(catalogPath,JSON.stringify(catalog,null,2)+'\n');

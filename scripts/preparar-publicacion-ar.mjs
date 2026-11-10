@@ -99,8 +99,16 @@ const output={
         }
       };
     });
+    const e=art.efectoEmergencia||{};
+    const emergence={
+      activo:e.activo!==false,
+      duracionMs:Math.max(500,Math.min(3000,Number(e.duracionMs)||1400)),
+      escalaInicial:Math.max(.4,Math.min(1,Number(e.escalaInicial)||.7)),
+      intensidad:['suave','media','cinematografica'].includes(e.intensidad)?e.intensidad:'cinematografica',
+      destello:e.destello!==false
+    };
     return {id,nombre:String(art.nombre||id).slice(0,100),targetIndex:index,
-      relacionAltoAncho:ratio,imagenObjetivo:target,capas:layers};
+      relacionAltoAncho:ratio,imagenObjetivo:target,capas:layers,efectoEmergencia:emergence};
   })
 };
 if(append){

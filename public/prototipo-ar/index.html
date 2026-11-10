@@ -309,9 +309,13 @@
     // Los borradores con imágenes nuevas continúan con el compilador local.
     if(data.archivoMind && data.compilador && data.compilador.cantidadObjetivos === data.cuadros.length) {
       var locationMind = new URL(data.archivoMind,location.href);
+      // El archivo targets.mind mantiene su nombre entre publicaciones; añade
+      // la huella del contenido para impedir que el móvil reutilice objetivos viejos.
+      var cacheKey = data.cacheKey || (data.version + '-' + data.cuadros.map(function(art){return art.id + ':' + art.targetIndex;}).join('|'));
+      locationMind.searchParams.set('v', String(cacheKey));
       try {
         say('Cargando datos de reconocimiento optimizados…', 'Carga rápida');
-        var response=await fetch(locationMind.href,{method:'HEAD',cache:'force-cache'});
+        var response=await fetch(locationMind.href,{method:'HEAD',cache:'no-store'});
         if(!response.ok)throw Error('No se encontró el archivo .mind publicado.');
         targetSrc=locationMind.href;
       }catch(err) {

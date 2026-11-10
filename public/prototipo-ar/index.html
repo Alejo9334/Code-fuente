@@ -364,6 +364,7 @@
         wrapper.object3D.scale.setScalar(1);
         wrapper.object3D.position.set(base.x,base.y,base.z);
         wrapper.object3D.rotation.z=wrapper.baseRotation||0;
+        wrapper.object3D.rotation.y=wrapper.baseRotationY||0;
         var mesh=wrapper.layerPlane.getObject3D('mesh');
         if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
       });
@@ -391,6 +392,10 @@
           }else if(spec.type==='girar'){
             wrapper.object3D.rotation.z=(wrapper.baseRotation||0)+wave*spec.rotation;
             wrapper.object3D.position.y=base.y+wave*spec.y;
+          }else if(spec.type==='desplazar'){
+            wrapper.object3D.position.x=base.x+wave*spec.slideX;
+          }else if(spec.type==='balancear'){
+            wrapper.object3D.rotation.y=(wrapper.baseRotationY||0)+wave*spec.tilt;
           }
         });
         group.motionFrame=requestAnimationFrame(frame);
@@ -521,9 +526,9 @@
         group.wrappers.push(wrapper);
         group.textures.push({plane:plane,layer:layer,order:layerIndex+1});
       });
-      var globalGap=Math.max(0,Math.min(.025,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.01));
+      var globalGap=Math.max(0,Math.min(.08,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.02));
       var depthValues=group.wrappers.map(function(wrapper,i){
-        return (Number(wrapper.layer.z)||0)+i*globalGap+Math.max(-.03,Math.min(.03,Number(wrapper.layer.separacionZ)||0));
+        return (Number(wrapper.layer.z)||0)+i*globalGap+Math.max(-.08,Math.min(.08,Number(wrapper.layer.separacionZ)||0));
       });
       var minDepth=depthValues.length?Math.min.apply(null,depthValues):0;
       var maxDepth=depthValues.length?Math.max.apply(null,depthValues):0;
@@ -532,20 +537,23 @@
         var effectiveDepth=depthValues[i];
         var depth=maxDepth-minDepth>.001?(effectiveDepth-minDepth)/(maxDepth-minDepth):i/Math.max(1,group.wrappers.length-1);
         depth=Math.max(0,Math.min(1,depth));
-        var physicalDepth=Math.max(0,Math.min(.3,effectiveDepth-minDepth));
-        var type=['flotar','pulso','girar'].includes(anim.tipo)?anim.tipo:'ninguna';
+        var physicalDepth=Math.max(0,Math.min(.75,effectiveDepth-minDepth));
+        var type=['flotar','pulso','girar','desplazar','balancear'].includes(anim.tipo)?anim.tipo:'ninguna';
         var amplitude=Math.abs(Number(anim.amplitud)||0);
         var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
         wrapper.depthFactor=depth;
-        wrapper.basePosition={x:0,y:0,z:-.055+physicalDepth*.22};
+        wrapper.basePosition={x:0,y:0,z:-.055+physicalDepth*.28};
         wrapper.baseRotation=0;
+        wrapper.baseRotationY=0;
         wrapper.motionSpec={
           type:type,period:period,phase:i*1.137,
           x:.0015+depth*.002,
-          y:.0025+Math.min(.004,amplitude*.2),
+          y:.0025+Math.min(.012,amplitude*.012),
           z:.001+depth*.0025,
-          scale:.008+Math.min(.025,amplitude*.18),
-          rotation:Math.min(.045,(amplitude||8)*Math.PI/180*.2)
+          scale:.008+Math.min(.055,amplitude*.06),
+          rotation:Math.min(.045,(amplitude||8)*Math.PI/180*.2),
+          slideX:Math.min(.035,amplitude*.035),
+          tilt:Math.min(.45,amplitude*Math.PI/180)
         };
         wrapper.object3D.position.set(0,0,wrapper.basePosition.z);
       });
@@ -631,7 +639,7 @@
     if(!art)throw new Error('Este cuadro no está registrado en la vista previa.');
     if(packet[2].length>art.capas.length || packet[2].length===0)throw new Error('Cantidad de capas incompatible.');
     var registry=new Map(art.capas.map(function(l){return [l.id,l];}));
-    var seen=new Set(), types=['ninguna','flotar','pulso','girar'];
+    var seen=new Set(), types=['ninguna','flotar','pulso','girar','desplazar','balancear'];
     var layers=packet[2].map(function(row){
       if(!Array.isArray(row) || row.length!==12 || !registry.has(row[0]) || seen.has(row[0])) {
         throw new Error('El enlace contiene capas desconocidas o repetidas.');
@@ -642,7 +650,7 @@
       var x=row[1],y=row[2],z=row[3],w=row[4],h=row[5],rotation=row[6],alpha=row[7],visible=row[8],type=row[9],amp=row[10],dur=row[11];
       if(Math.abs(x)>1 || Math.abs(y)>1 || z<0 || z>1 || w<=0 || w>3 || h<=0 || h>4 ||
          Math.abs(rotation)>360 || alpha<0 || alpha>1 || (visible!==0&&visible!==1) ||
-         !Number.isInteger(type) || type<0 || type>3 || amp<0 || amp>90 || dur<350 || dur>20000) {
+         !Number.isInteger(type) || type<0 || type>5 || amp<0 || amp>90 || dur<350 || dur>20000) {
         throw new Error('El enlace contiene valores fuera de rango.');
       }
       var l=Object.assign({},registry.get(row[0]));

@@ -359,6 +359,116 @@ dialog h2{font-size:21px;margin:0 0 8px}
     var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='visor222-proyecto-'+article().id+'.json';a.click();
     setTimeout(function(){URL.revokeObjectURL(url);},2000);note('Proyecto JSON descargado.');
   });
+
+  // Publicación segura: empaqueta exclusivamente el cuadro seleccionado.
+  // Toda la preparación sucede en este navegador; solo GitHub puede aceptar el commit.
+  function publicationSlug(value) {
+    return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/[^a-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,64);
+  }
+  function sourceAsDataURL(src,kind) {
+    return new Promise(async function(resolve,reject) {
+      try {
+        if(/^data:image\/(?:png|jpeg);base64,/i.test(src)){
+          if(kind==='layer'&&!/^data:image\/png;base64,/i.test(src))throw Error('Las capas deben estar en formato PNG.');
+          resolve(src);return;
+        }
+        // Solo se admiten imágenes que provienen del sitio actual; ninguna URL remota arbitraria.
+        if(typeof src!=='string'||!/^\.[/][a-zA-Z0-9_./-]+\.(png|jpg|jpeg|webp)$/i.test(src)||src.includes('..'))throw Error('Ruta de imagen no permitida.');
+        var url=new URL(src,location.href);
+        if(url.origin!==location.origin)throw Error('Solo se pueden empaquetar imágenes de este visor.');
+        var response=await fetch(url.href,{cache:'no-store'});
+        if(!response.ok)throw Error('No se pudo descargar '+src);
+        var blob=await response.blob();
+        if(blob.size>8*1024*1024)throw Error('Una imagen supera 8 MB.');
+        if(!['image/png','image/jpeg','image/webp'].includes(blob.type))throw Error('Formato de imagen incompatible.');
+        var data=await new Promise(function(res,rej){
+          var reader=new FileReader();reader.onload=function(){res(reader.result);};
+          reader.onerror=function(){rej(Error('No se pudo leer '+src));};reader.readAsDataURL(blob);
+        });
+        if(kind==='layer'&&!/^data:image\/png;base64,/i.test(data)){
+          // Las texturas WebP optimizadas publicadas deben recuperar su transparencia al exportar PNG.
+          var picture=new Image();
+          picture.src=data;
+          await picture.decode();
+          var canvas=document.createElement('canvas');
+          canvas.width=picture.naturalWidth;canvas.height=picture.naturalHeight;
+          if(!canvas.width||!canvas.height)throw Error('Imagen vacía.');
+          canvas.getContext('2d').drawImage(picture,0,0);
+          data=canvas.toDataURL('image/png');
+        }
+        if(kind==='reference'&&/^data:image\/webp;base64,/i.test(data)){
+          var image=new Image();image.src=data;await image.decode();
+          var cv=document.createElement('canvas');cv.width=image.naturalWidth;cv.height=image.naturalHeight;
+          cv.getContext('2d').drawImage(image,0,0);data=cv.toDataURL('image/png');
+        }
+        resolve(data);
+      }catch(err){reject(err);}
+    });
+  }
+  function openPublication(){
+    if(!article()){note('Primero crea o selecciona un cuadro.');return;}
+    $('publishReady').hidden=true;
+    $('publishStatus').textContent='Cuadro seleccionado: '+article().nombre+'. Genera el paquete para publicarlo desde GitHub.';
+    $('publishDialog').showModal();
+  }
+  $('publishSelected').addEventListener('click',openPublication);
+  $('publishSidebar').addEventListener('click',openPublication);
+  $('closePublish').addEventListener('click',function(){$('publishDialog').close();});
+  $('downloadPublish').addEventListener('click',async function(){
+    var btn=this;
+    if(!article())return;
+    btn.disabled=true;$('publishReady').hidden=true;
+    try {
+      var art=article();
+      var id=publicationSlug(art.id);
+      if(!id||!art.capas.length||art.capas.length>15)throw Error('Cuadro inválido: se requieren entre 1 y 15 capas.');
+      $('publishStatus').textContent='Comprobando que el cuadro sea nuevo…';
+      var response=await fetch('./catalogo.json',{cache:'no-store'});
+      if(!response.ok)throw Error('No se pudo comprobar el catálogo publicado. Reintenta con conexión.');
+      var published=await response.json();
+      if(published.cuadros.some(function(existing){return existing.id===id;}))
+        throw Error('Este cuadro ya está publicado. El flujo automático solo permite agregar cuadros nuevos; crea una copia con «Duplicar» y otro identificador, o conserva los cambios como JSON de respaldo.');
+      var ratio=Number(art.relacionAltoAncho);
+      if(!Number.isFinite(ratio)||ratio<=0||ratio>5)throw Error('Proporción de imagen no válida.');
+      var image=await sourceAsDataURL(art.imagenObjetivo,'reference');
+      var layers=[];
+      var usedIds=new Set();
+      for(var i=0;i<art.capas.length;i++){
+        var layer=art.capas[i],layerId=publicationSlug(layer.id),animation=layer.animacion||{};
+        if(!layerId||usedIds.has(layerId))throw Error('Identificador de capa duplicado o inválido.');
+        usedIds.add(layerId);
+        $('publishStatus').textContent='Preparando capa '+(i+1)+' de '+art.capas.length+'…';
+        var png=await sourceAsDataURL(layer.imagen,'layer');
+        var valid=['ancho','alto','x','y','z','opacidad'].every(function(k){return Number.isFinite(Number(layer[k]));});
+        if(!valid||Number(layer.ancho)<=0||Number(layer.alto)<=0||Math.abs(Number(layer.x))>1||
+          Math.abs(Number(layer.y))>1||Number(layer.z)<0||Number(layer.z)>1||Number(layer.opacidad)<0||Number(layer.opacidad)>1)
+          throw Error('Revisa dimensiones, posición y opacidad de '+layer.nombre+'.');
+        layers.push({id:layerId,nombre:layer.nombre||layerId,imagen:png,
+          ancho:Number(layer.ancho),alto:Number(layer.alto),x:Number(layer.x),y:Number(layer.y),
+          z:Number(layer.z),rotation:Number(layer.rotation||0),opacidad:Number(layer.opacidad),
+          visible:layer.visible!==false,animacion:{tipo:['ninguna','flotar','pulso','girar'].includes(animation.tipo)?animation.tipo:'ninguna',
+          amplitud:Number(animation.amplitud||0),duracionMs:Number(animation.duracionMs||2000)}});
+      }
+      var payload={version:2,titulo:'Visor-222 · Imágenes AR',cuadros:[{
+        id:id,nombre:art.nombre||id,targetIndex:0,relacionAltoAncho:ratio,imagenObjetivo:image,capas:layers
+      }]};
+      var serialized=JSON.stringify(payload);
+      var bytes=new TextEncoder().encode(serialized).length;
+      if(bytes>24*1024*1024)throw Error('El JSON pesa más de 24 MB. Reduce el tamaño de las imágenes.');
+      var filename=id+'-'+new Date().toISOString().replace(/[:.]/g,'-').toLowerCase()+'.json';
+      var blob=new Blob([serialized],{type:'application/json'});
+      var objectURL=URL.createObjectURL(blob);
+      var link=document.createElement('a');link.href=objectURL;link.download=filename;
+      document.body.append(link);link.click();link.remove();
+      setTimeout(function(){URL.revokeObjectURL(objectURL);},60000);
+      $('publishReady').hidden=false;
+      $('publishStatus').textContent='Archivo descargado: '+filename+'\nPeso: '+(bytes/1048576).toFixed(2)+' MB.\nAbre GitHub, sube ese archivo y confirma el commit.';
+      note('Paquete generado. Falta subirlo desde tu cuenta de GitHub; todavía no está publicado.');
+    }catch(err){$('publishStatus').textContent='No se generó el paquete: '+err.message;note(err.message);}
+    finally{btn.disabled=false;}
+  });
+
   $('importButton').addEventListener('click',function(){$('importFile').click();});
   $('importFile').addEventListener('change',async function(){
     var file=this.files[0];if(!file)return;

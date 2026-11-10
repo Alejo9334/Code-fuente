@@ -649,14 +649,24 @@ dialog h2{font-size:21px;margin:0 0 8px}
     ctx.drawImage(im,0,0,cv.width,cv.height);return {src:cv.toDataURL(type,.86),ratio:cv.height/cv.width};
   }
   $('addPng').addEventListener('change',async function(){
-    var file=this.files[0];if(!file)return;
+    var files=Array.from(this.files||[]);
+    if(!files.length)return;
     try{
-      if(file.type!=='image/png')throw Error('La nueva capa debe ser PNG con transparencia.');
-      var image=await resized(file,1024,'image/png');
-      if(Math.abs(image.ratio-aspect)>.01)throw Error('El PNG debe conservar la misma proporción de lienzo que el cuadro.');
-      var id='capa-'+Date.now().toString(36),l={id:id,nombre:file.name.replace(/\.png$/i,''),imagen:image.src,baseAncho:1,baseAlto:aspect,ancho:1,alto:aspect,x:0,y:0,z:.12,rotation:0,opacidad:1,visible:true,animacion:{tipo:'flotar',amplitud:.015,duracionMs:2500}};
-      article().capas.push(l);selectedId=l.id;render();note('PNG agregado. Guarda o exporta el borrador.');
-    }catch(e){note(e.message);}
+      if(article().capas.length+files.length>15)throw Error('Máximo 15 capas por cuadro.');
+      for(var i=0;i<files.length;i++){
+        var file=files[i];
+        if(file.type!=='image/png')throw Error('Todas las capas deben ser PNG con transparencia.');
+        if(file.size>8*1024*1024)throw Error('La capa '+file.name+' supera 8 MB.');
+        var image=await resized(file,1024,'image/png');
+        if(Math.abs(image.ratio-aspect)>.01)throw Error('El PNG '+file.name+' debe tener la misma proporción del cuadro.');
+        var id=newId('capa'),l={id:id,nombre:file.name.replace(/\.png$/i,''),imagen:image.src,
+          baseAncho:1,baseAlto:aspect,ancho:1,alto:aspect,x:0,y:0,
+          z:Math.min(.3,.015+(article().capas.length*.02)),rotation:0,opacidad:1,visible:true,
+          animacion:{tipo:'flotar',amplitud:.015,duracionMs:2500}};
+        article().capas.push(l);selectedId=l.id;
+      }
+      render();note('Se agregaron '+files.length+' capas. Puedes ordenarlas y prepararlas para GitHub desde este editor.');
+    }catch(e){render();note(e.message);}
     this.value='';
   });
   $('changeTarget').addEventListener('change',async function(){

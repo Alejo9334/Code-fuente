@@ -59,6 +59,9 @@ h1{font-size:17px;margin:0 0 6px}h2{font-size:14px;margin:0 0 12px}.muted{color:
 @keyframes turn{from{rotate:0deg}to{rotate:var(--angle,8deg)}}
 @keyframes slideX{from{translate:0 0}to{translate:var(--slide-distance,4%) 0}}
 @keyframes rock3d{from{transform:perspective(700px) rotateY(calc(var(--tilt-angle,8deg) * -1))}to{transform:perspective(700px) rotateY(var(--tilt-angle,8deg))}}
+@keyframes pathCircle{0%{translate:0 0}25%{translate:var(--path-a) 0}50%{translate:0 var(--path-a)}75%{translate:calc(var(--path-a) * -1) 0}100%{translate:0 0}}
+@keyframes pathEight{0%{translate:0 0}25%{translate:var(--path-a) var(--path-a)}50%{translate:0 0}75%{translate:calc(var(--path-a) * -1) calc(var(--path-a) * -1)}100%{translate:0 0}}
+@keyframes pathArc{0%{translate:calc(var(--path-a) * -1) 0}50%{translate:0 calc(var(--path-a) * -1)}100%{translate:var(--path-a) 0}}
 .right{display:flex;flex-direction:column;gap:13px}
 .field{display:flex;flex-direction:column;gap:7px}
 .field label{display:flex;justify-content:space-between;font-size:12px;color:#b7cbe4;gap:8px}.field output{color:#64d4fa;font-variant-numeric:tabular-nums}
@@ -90,6 +93,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <body>
 <header><div class="brand">VISOR<em>·222</em> <small>Editor visual · Prototipo</small></div>
 <div class="top-actions">
+<button class="subtle" id="undo" type="button" disabled title="Deshacer (Ctrl+Z)">↶ Deshacer</button>
+<button class="subtle" id="redo" type="button" disabled title="Rehacer (Ctrl+Y)">↷ Rehacer</button>
 <button class="subtle" id="reset">Restablecer</button>
 <button class="subtle" id="export">Descargar proyecto JSON</button>
 <button class="subtle" id="shareAR">Probar en mi celular · QR</button>
@@ -125,6 +130,16 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="field"><label for="emergenceIntensity">Profundidad de salida</label><select id="emergenceIntensity"><option value="suave">Sutil</option><option value="media">Media</option><option value="cinematografica" selected>Cinematográfica</option></select></div>
 <div class="field"><label class="switch" for="emergenceFlash"><input id="emergenceFlash" type="checkbox" checked> Destello de activación</label></div>
 <p class="muted">Las capas salen desde detrás de la imagen y terminan en la profundidad Z que ya configuraste. Las animaciones individuales se conservan.</p>
+<div class="group-label">Parallax de cámara · Cuadro seleccionado</div>
+<div class="field"><label class="switch" for="parallaxEnabled"><input id="parallaxEnabled" type="checkbox"> Activar profundidad según movimiento del celular</label></div>
+<div class="field"><label for="parallaxIntensity">Intensidad del parallax <output id="parallaxIntensityVal">35%</output></label><input id="parallaxIntensity" type="range" min="0" max="100" step="5" value="35"></div>
+<p class="muted">En celulares compatibles, las capas tendrán un desplazamiento sutil al inclinar el dispositivo. El permiso de movimiento se solicita al activar la cámara.</p>
+<div class="group-label">Presets de composición</div>
+<div class="field"><label for="presetName">Nombre del preset</label><input id="presetName" type="text" maxlength="50" placeholder="Ej. Efecto cinematográfico"></div>
+<div class="controls"><button id="savePreset" type="button" class="subtle">Guardar preset</button></div>
+<div class="field"><label for="presetSelect">Presets guardados para este cuadro</label><select id="presetSelect"><option value="">Selecciona un preset</option></select></div>
+<div class="controls"><button id="applyPreset" type="button" class="subtle">Aplicar</button><button id="deletePreset" type="button" class="danger">Eliminar</button></div>
+<p class="muted">Los presets guardan profundidad, transformaciones, sombras, animaciones y parallax. Puedes reutilizarlos en este cuadro.</p>
 <div class="group-label">Proyecto guardado</div>
 <div class="controls"><button class="subtle" id="save">Guardar borrador local</button><button class="subtle" id="importButton">Importar JSON</button></div>
 <div class="group-label">Edición local · Sin inicio de sesión</div>
@@ -165,11 +180,27 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="field"><label for="scale">Escala general <output id="scaleVal"></output></label><input id="scale" type="range" min="0.25" max="3" step="0.01"></div>
 <div class="field"><label for="scaleX">Escala horizontal X <output id="scaleXVal"></output></label><input id="scaleX" type="range" min="0.25" max="3" step="0.01"></div>
 <div class="field"><label for="scaleY">Escala vertical Y <output id="scaleYVal"></output></label><input id="scaleY" type="range" min="0.25" max="3" step="0.01"></div>
-<div class="field"><label for="rotation">Rotación <output id="rotationVal"></output></label><input id="rotation" type="range" min="-180" max="180" step="1"></div>
+<div class="group-label full">Punto de anclaje · Pivote</div>
+<div class="field full"><label for="pivotPreset">Anclaje rápido</label><select id="pivotPreset"><option value="center">Centro</option><option value="top">Centro superior</option><option value="bottom">Centro inferior</option><option value="left">Centro izquierdo</option><option value="right">Centro derecho</option><option value="top-left">Esquina superior izquierda</option><option value="top-right">Esquina superior derecha</option><option value="bottom-left">Esquina inferior izquierda</option><option value="bottom-right">Esquina inferior derecha</option><option value="custom">Personalizado</option></select></div>
+<div class="field"><label for="pivotX">Pivote horizontal X <output id="pivotXVal"></output></label><input id="pivotX" type="range" min="0" max="1" step="0.01"></div>
+<div class="field"><label for="pivotY">Pivote vertical Y <output id="pivotYVal"></output></label><input id="pivotY" type="range" min="0" max="1" step="0.01"></div>
+<div class="group-label full">Rotación tridimensional</div>
+<div class="field"><label for="rotationX">Rotación X <output id="rotationXVal"></output></label><input id="rotationX" type="range" min="-180" max="180" step="1"></div>
+<div class="field"><label for="rotationY">Rotación Y <output id="rotationYVal"></output></label><input id="rotationY" type="range" min="-180" max="180" step="1"></div>
+<div class="field"><label for="rotation">Rotación Z <output id="rotationVal"></output></label><input id="rotation" type="range" min="-180" max="180" step="1"></div>
 <div class="field"><label for="opacity">Opacidad <output id="opacityVal"></output></label><input id="opacity" type="range" min="0" max="1" step="0.01"></div>
 <hr class="full">
+<h2 class="full">Sombra por capa</h2>
+<div class="field"><label class="switch" for="shadowEnabled"><input id="shadowEnabled" type="checkbox"> Activar sombra</label></div>
+<div class="field"><label for="shadowBlur">Desenfoque <output id="shadowBlurVal"></output></label><input id="shadowBlur" type="range" min="0" max="40" step="1"></div>
+<div class="field"><label for="shadowOffsetX">Desplazamiento X <output id="shadowOffsetXVal"></output></label><input id="shadowOffsetX" type="range" min="-30" max="30" step="1"></div>
+<div class="field"><label for="shadowOffsetY">Desplazamiento Y <output id="shadowOffsetYVal"></output></label><input id="shadowOffsetY" type="range" min="-30" max="30" step="1"></div>
+<div class="field"><label for="shadowOpacity">Opacidad de sombra <output id="shadowOpacityVal"></output></label><input id="shadowOpacity" type="range" min="0" max="100" step="5"></div>
+<hr class="full">
 <h2 class="full">Animación independiente</h2>
-<div class="field"><label for="animationType">Tipo de animación</label><select id="animationType"><option value="ninguna">Sin animación</option><option value="flotar">Flotación</option><option value="pulso">Pulso</option><option value="girar">Rotación animada</option><option value="desplazar">Desplazamiento lateral</option><option value="balancear">Balanceo 3D</option></select></div>
+<div class="field"><label for="animationType">Tipo de animación</label><select id="animationType"><option value="ninguna">Sin animación</option><option value="flotar">Flotación</option><option value="pulso">Pulso</option><option value="girar">Rotación animada</option><option value="desplazar">Desplazamiento lateral</option><option value="balancear">Balanceo 3D</option><option value="trayectoria">Trayectoria personalizada</option></select></div>
+<div class="field"><label for="pathShape">Forma de trayectoria</label><select id="pathShape"><option value="circulo">Circular</option><option value="ocho">Figura de ocho</option><option value="arco">Arco</option></select></div>
+<div class="field"><label for="pathAmplitude">Amplitud de trayectoria <output id="pathAmplitudeVal"></output></label><input id="pathAmplitude" type="range" min="0" max="100" step="5" value="35"></div>
 <div class="field"><label for="amplitude">Amplitud <output id="amplitudeVal"></output></label><input id="amplitude" type="range" min="0" max="1" step="0.01"></div>
 <div class="field"><label for="duration">Duración <output id="durationVal"></output></label><input id="duration" type="range" min="400" max="15000" step="100"></div>
 <hr class="full">
@@ -222,8 +253,60 @@ dialog h2{font-size:21px;margin:0 0 8px}
   var shareURL='';
   var aspect=2047/1638;
   var editorView='perspectiva';
-  var controlIds=['name','posX','posY','depth','layerSpacingExtra','scale','scaleX','scaleY','rotation','opacity','animationType','amplitude','duration','visible'];
+  var undoStack=[],redoStack=[],historyActive=false,historyLimit=50;
+  var controlIds=['name','posX','posY','depth','layerSpacingExtra','scale','scaleX','scaleY','pivotX','pivotY','rotationX','rotationY','rotation','opacity','shadowEnabled','shadowBlur','shadowOffsetX','shadowOffsetY','shadowOpacity','animationType','pathShape','pathAmplitude','amplitude','duration','visible'];
   function note(msg){$('status').textContent=msg;}
+  function historySnapshot(){
+    if(!catalog)return null;
+    var copy=JSON.parse(JSON.stringify(catalog)),assets=[];
+    copy.cuadros.forEach(function(art,i){
+      assets[i]={target:catalog.cuadros[i].imagenObjetivo,layers:[]};
+      art.imagenObjetivo='';
+      art.capas.forEach(function(layer,j){assets[i].layers[j]=catalog.cuadros[i].capas[j].imagen;layer.imagen='';});
+    });
+    return {state:JSON.stringify(copy),assets:assets,selectedArtId:selectedArtId,selectedId:selectedId};
+  }
+  function restoreHistory(snapshot){
+    var restored=JSON.parse(snapshot.state);
+    restored.cuadros.forEach(function(art,i){
+      art.imagenObjetivo=snapshot.assets[i].target;
+      art.capas.forEach(function(layer,j){layer.imagen=snapshot.assets[i].layers[j];});
+    });
+    catalog=normalize(restored);
+    selectedArtId=catalog.cuadros.some(function(a){return a.id===snapshot.selectedArtId;})?snapshot.selectedArtId:catalog.cuadros[0].id;
+    var art=article();
+    selectedId=art.capas.some(function(l){return l.id===snapshot.selectedId;})?snapshot.selectedId:art.capas[0].id;
+    historyActive=false;render();persistQuiet();updateHistoryButtons();
+  }
+  function updateHistoryButtons(){
+    $('undo').disabled=!undoStack.length;$('redo').disabled=!redoStack.length;
+  }
+  function checkpoint(){
+    if(!catalog)return;
+    undoStack.push(historySnapshot());
+    if(undoStack.length>historyLimit)undoStack.shift();
+    redoStack=[];historyActive=false;updateHistoryButtons();
+  }
+  function beginHistory(){
+    if(!historyActive){checkpoint();historyActive=true;}
+  }
+  function endHistory(){historyActive=false;updateHistoryButtons();}
+  function undo(){
+    if(!undoStack.length)return;
+    redoStack.push(historySnapshot());
+    var previous=undoStack.pop();restoreHistory(previous);
+    note('Cambio deshecho.');
+  }
+  function redo(){
+    if(!redoStack.length)return;
+    undoStack.push(historySnapshot());
+    var next=redoStack.pop();restoreHistory(next);
+    note('Cambio rehecho.');
+  }
+  function persistQuiet(){
+    if(!catalog)return;
+    try{localStorage.setItem(draftKey,JSON.stringify(catalog));}catch(e){}
+  }
   function safeNumber(n, fallback){var v=Number(n);return Number.isFinite(v)?v:fallback;}
   function article(){return catalog&&catalog.cuadros.find(function(a){return a.id===selectedArtId;});}
   function selected(){var a=article();return a&&a.capas.find(function(l){return l.id===selectedId;});}
@@ -254,6 +337,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   }
   function updateEmergence(){
     var a=article();if(!a)return;
+    beginHistory();
     a.efectoEmergencia={
       activo:$('emergenceEnabled').checked,
       duracionMs:Number($('emergenceDuration').value),
@@ -262,11 +346,17 @@ dialog h2{font-size:21px;margin:0 0 8px}
       destello:$('emergenceFlash').checked
     };
     populateEmergence();
+    persistQuiet();
     note('Emergencia 2.5D actualizada. Guarda el borrador y publícalo para verla en el visor.');
   }
   ['emergenceEnabled','emergenceDuration','emergenceScale','emergenceIntensity','emergenceFlash'].forEach(function(id){
     $(id).addEventListener('input',updateEmergence);
-    $(id).addEventListener('change',updateEmergence);
+    $(id).addEventListener('change',function(){updateEmergence();endHistory();});
+  });
+  $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
+  document.addEventListener('keydown',function(event){
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){event.preventDefault();event.shiftKey?redo():undo();}
+    else if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){event.preventDefault();redo();}
   });
   function invalidateTracking(){if(catalog){delete catalog.archivoMind;delete catalog.compilador;}}
   function newId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36);}
@@ -285,6 +375,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
       art.relacionAltoAncho=ratio;
       art.espaciadoCapas=Math.max(0,Math.min(.08,safeNumber(art.espaciadoCapas,.02)));
       art.targetIndex=i;
+      art.parallax={activo:art.parallax&&art.parallax.activo===true,intensidad:Math.max(0,Math.min(1,safeNumber(art.parallax&&art.parallax.intensidad,.35)))};
+      art.presets=Array.isArray(art.presets)?art.presets:[];
       art.efectoEmergencia=normalizeEmergence(art.efectoEmergencia);
       var ids=new Set();
       art.capas.forEach(function(l){
@@ -298,10 +390,16 @@ dialog h2{font-size:21px;margin:0 0 8px}
         l.escalaX=Math.max(.25,Math.min(3,safeNumber(l.escalaX,1)));
         l.escalaY=Math.max(.25,Math.min(3,safeNumber(l.escalaY,1)));
         l.rotation=safeNumber(l.rotation,0);
+        l.rotationX=safeNumber(l.rotationX,0);l.rotationY=safeNumber(l.rotationY,0);
+        l.pivotX=Math.max(0,Math.min(1,safeNumber(l.pivotX,.5)));l.pivotY=Math.max(0,Math.min(1,safeNumber(l.pivotY,.5)));
+        l.sombra={activo:l.sombra&&l.sombra.activo===true,desenfoque:Math.max(0,Math.min(40,safeNumber(l.sombra&&l.sombra.desenfoque,12))),x:Math.max(-30,Math.min(30,safeNumber(l.sombra&&l.sombra.x,0))),y:Math.max(-30,Math.min(30,safeNumber(l.sombra&&l.sombra.y,8))),opacidad:Math.max(0,Math.min(100,safeNumber(l.sombra&&l.sombra.opacidad,35)))};
         l.opacidad=safeNumber(l.opacidad,1);
         l.visible=l.visible!==false;
         l.animacion=l.animacion||{tipo:'ninguna',amplitud:0,duracionMs:2000};
-        if(!['ninguna','flotar','pulso','girar','desplazar','balancear'].includes(l.animacion.tipo))l.animacion.tipo='ninguna';
+        if(!['ninguna','flotar','pulso','girar','desplazar','balancear','trayectoria'].includes(l.animacion.tipo))l.animacion.tipo='ninguna';
+        l.animacion.trayectoria=l.animacion.trayectoria||{forma:'circulo',amplitud:.35};
+        if(!['circulo','ocho','arco'].includes(l.animacion.trayectoria.forma))l.animacion.trayectoria.forma='circulo';
+        l.animacion.trayectoria.amplitud=Math.max(0,Math.min(1,safeNumber(l.animacion.trayectoria.amplitud,.35)));
       });
     });
     return raw;
@@ -357,11 +455,15 @@ dialog h2{font-size:21px;margin:0 0 8px}
       var w=safeNumber(l.ancho,1),h=safeNumber(l.alto,aspect);
       var effectiveZ=safeNumber(l.z,0)+index*globalGap+safeNumber(l.separacionZ,0);
       box.style.width=w*100+'%';box.style.height=(h/aspect)*100+'%';
-      box.style.left=(50+safeNumber(l.x,0)*100)+'%';
-      box.style.top=(50-safeNumber(l.y,0)/aspect*100)+'%';
-      box.style.transform='translate(-50%,-50%) translateZ('+effectiveZ*260+'px) rotate('+safeNumber(l.rotation,0)+'deg)';
+      var pivotX=safeNumber(l.pivotX,.5),pivotY=safeNumber(l.pivotY,.5);
+      box.style.left=(50+safeNumber(l.x,0)*100-pivotX*w*100)+'%';
+      box.style.top=(50-safeNumber(l.y,0)/aspect*100-pivotY*h/aspect*100)+'%';
+      box.style.transformOrigin=(pivotX*100)+'% '+(pivotY*100)+'%';
+      box.style.transform='translateZ('+effectiveZ*260+'px) rotateX('+safeNumber(l.rotationX,0)+'deg) rotateY('+safeNumber(l.rotationY,0)+'deg) rotateZ('+safeNumber(l.rotation,0)+'deg)';
       var pic=document.createElement('img');pic.src=asset(l.imagen);pic.alt='';
       pic.style.opacity=String(safeNumber(l.opacidad,1));
+      var shadow=l.sombra||{};
+      if(shadow.activo){pic.style.filter='drop-shadow('+safeNumber(shadow.x,0)+'px '+safeNumber(shadow.y,8)+'px '+safeNumber(shadow.desenfoque,12)+'px rgba(0,0,0,'+(safeNumber(shadow.opacidad,35)/100)+'))';}
       if($('animatePreview').checked&&l.animacion){
         var ani=l.animacion,dur=Math.max(400,safeNumber(ani.duracionMs,2000));
         if(ani.tipo==='flotar'){pic.style.animation='floaty '+dur+'ms ease-in-out infinite alternate';pic.style.setProperty('--float-distance',(-Math.min(8,safeNumber(ani.amplitud,.02)*8)/aspect*100)+'%');}
@@ -369,6 +471,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
         else if(ani.tipo==='girar'){pic.style.setProperty('--angle',safeNumber(ani.amplitud,0)+'deg');pic.style.animation='turn '+dur+'ms ease-in-out infinite alternate';}
         else if(ani.tipo==='desplazar'){pic.style.setProperty('--slide-distance',Math.min(8,safeNumber(ani.amplitud,0)*8)+'%');pic.style.animation='slideX '+dur+'ms ease-in-out infinite alternate';}
         else if(ani.tipo==='balancear'){pic.style.setProperty('--tilt-angle',safeNumber(ani.amplitud,0)+'deg');pic.style.animation='rock3d '+dur+'ms ease-in-out infinite alternate';}
+        else if(ani.tipo==='trayectoria'){var path=ani.trayectoria||{};pic.style.setProperty('--path-a',(safeNumber(path.amplitud,.35)*10)+'%');pic.style.animation=(path.forma==='ocho'?'pathEight':path.forma==='arco'?'pathArc':'pathCircle')+' '+dur+'ms ease-in-out infinite';}
       }
       box.appendChild(pic);b.appendChild(box);
     });
@@ -376,6 +479,15 @@ dialog h2{font-size:21px;margin:0 0 8px}
   function populate(){
     var l=selected();if(!l)return;
     $('activeTag').textContent=l.id;$('name').value=l.nombre;
+    $('pivotX').value=safeNumber(l.pivotX,.5);$('pivotY').value=safeNumber(l.pivotY,.5);
+    $('rotationX').value=safeNumber(l.rotationX,0);$('rotationY').value=safeNumber(l.rotationY,0);
+    var pivotOptions={center:[.5,.5],top:[.5,0],bottom:[.5,1],left:[0,.5],right:[1,.5],'top-left':[0,0],'top-right':[1,0],'bottom-left':[0,1],'bottom-right':[1,1]};
+    var pivotKey=Object.keys(pivotOptions).find(function(k){return Math.abs(pivotOptions[k][0]-Number($('pivotX').value))<.005&&Math.abs(pivotOptions[k][1]-Number($('pivotY').value))<.005;});
+    $('pivotPreset').value=pivotKey||'custom';
+    var sh=l.sombra||{};$('shadowEnabled').checked=sh.activo===true;$('shadowBlur').value=safeNumber(sh.desenfoque,12);
+    $('shadowOffsetX').value=safeNumber(sh.x,0);$('shadowOffsetY').value=safeNumber(sh.y,8);$('shadowOpacity').value=safeNumber(sh.opacidad,35);
+    $('pathShape').value=(l.animacion.trayectoria||{}).forma||'circulo';
+    $('pathAmplitude').value=Math.round(safeNumber(l.animacion.trayectoria&&l.animacion.trayectoria.amplitud,.35)*100);
     $('posX').value=l.x;$('posY').value=l.y;$('depth').value=l.z;
     $('layerSpacingExtra').value=safeNumber(l.separacionZ,0);
     $('scale').value=safeNumber(l.escalaUniforme,safeNumber(l.ancho,1)/safeNumber(l.baseAncho,1));
@@ -389,6 +501,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
   }
   function configureAmplitude(){
     var rotating=['girar','balancear'].includes($('animationType').value);
+    $('pathShape').disabled=$('animationType').value!=='trayectoria';
+    $('pathAmplitude').disabled=$('animationType').value!=='trayectoria';
     $('amplitude').max=rotating?'45':'1';
     $('amplitude').step=rotating?'1':'0.01';
     if(Number($('amplitude').value)>Number($('amplitude').max))$('amplitude').value=rotating?'12':'0.1';
@@ -402,7 +516,12 @@ dialog h2{font-size:21px;margin:0 0 8px}
       scaleX:Math.round(Number($('scaleX').value)*100)+'%',
       scaleY:Math.round(Number($('scaleY').value)*100)+'%',
       rotation:$('rotation').value+'°',
+      rotationX:$('rotationX').value+'°',rotationY:$('rotationY').value+'°',
+      pivotX:Math.round(Number($('pivotX').value)*100)+'%',pivotY:Math.round(Number($('pivotY').value)*100)+'%',
       opacity:Math.round(Number($('opacity').value)*100)+'%',
+      shadowBlur:Number($('shadowBlur').value)+' px',shadowOffsetX:Number($('shadowOffsetX').value)+' px',
+      shadowOffsetY:Number($('shadowOffsetY').value)+' px',shadowOpacity:$('shadowOpacity').value+'%',
+      pathAmplitude:$('pathAmplitude').value+'%',
       amplitude:['girar','balancear'].includes($('animationType').value)?$('amplitude').value+'°':Math.round(Number($('amplitude').value)*100)+'%',
       duration:(Number($('duration').value)/1000).toFixed(1)+' s',
       layerSpacingExtra:Math.round(Number($('layerSpacingExtra').value)*100)+'%'
@@ -413,25 +532,34 @@ dialog h2{font-size:21px;margin:0 0 8px}
     if(!catalog||!article())return;
     $('artName').textContent=article().nombre||article().id;
     $('artTitle').value=article().nombre||'';
-    drawArts();drawList();drawBoard();populate();populateEmergence();
+    drawArts();drawList();drawBoard();populate();populateEmergence();populateParallax();drawPresets();updateHistoryButtons();
     $('deleteArt').disabled=catalog.cuadros.length<2;
     var index=catalog.cuadros.findIndex(function(a){return a.id===selectedArtId;});
     $('artUp').disabled=index<=0;$('artDown').disabled=index>=catalog.cuadros.length-1;
   }
   function controlChanged(){
     var l=selected();if(!l)return;
+    beginHistory();
     configureAmplitude();
     l.nombre=$('name').value||l.id;l.x=Number($('posX').value);l.y=Number($('posY').value);
     l.z=Number($('depth').value);l.separacionZ=Number($('layerSpacingExtra').value);l.rotation=Number($('rotation').value);
+    l.rotationX=Number($('rotationX').value);l.rotationY=Number($('rotationY').value);
+    l.pivotX=Number($('pivotX').value);l.pivotY=Number($('pivotY').value);
+    l.sombra={activo:$('shadowEnabled').checked,desenfoque:Number($('shadowBlur').value),x:Number($('shadowOffsetX').value),y:Number($('shadowOffsetY').value),opacidad:Number($('shadowOpacity').value)};
     var scale=Number($('scale').value);
     l.escalaUniforme=scale;l.escalaX=Number($('scaleX').value);l.escalaY=Number($('scaleY').value);
     l.ancho=safeNumber(l.baseAncho,1)*scale*l.escalaX;
     l.alto=safeNumber(l.baseAlto,aspect)*scale*l.escalaY;
     l.opacidad=Number($('opacity').value);l.visible=$('visible').checked;
-    l.animacion={tipo:$('animationType').value,amplitud:Number($('amplitude').value),duracionMs:Number($('duration').value)};
+    l.animacion={tipo:$('animationType').value,amplitud:Number($('amplitude').value),duracionMs:Number($('duration').value),
+      trayectoria:{forma:$('pathShape').value,amplitud:Number($('pathAmplitude').value)/100}};
     updateOutputs();drawList();drawBoard();
   }
-  controlIds.forEach(function(id){$(id).addEventListener('input',controlChanged);$(id).addEventListener('change',controlChanged);});
+  controlIds.forEach(function(id){$(id).addEventListener('input',controlChanged);$(id).addEventListener('change',function(){controlChanged();endHistory();});});
+  $('pivotPreset').addEventListener('change',function(){
+    var map={center:[.5,.5],top:[.5,0],bottom:[.5,1],left:[0,.5],right:[1,.5],'top-left':[0,0],'top-right':[1,0],'bottom-left':[0,1],'bottom-right':[1,1]};
+    if(map[this.value]){$('pivotX').value=map[this.value][0];$('pivotY').value=map[this.value][1];controlChanged();endHistory();}
+  });
   ['showBase','showOutline','animatePreview'].forEach(function(id){$(id).addEventListener('change',drawBoard);});
   function setEditorView(mode){
     editorView=['perspectiva','frontal','lateral','superior'].includes(mode)?mode:'perspectiva';
@@ -447,13 +575,66 @@ dialog h2{font-size:21px;margin:0 0 8px}
   });
   $('layerSpacing').addEventListener('input',function(){
     if(!article())return;
+    beginHistory();
     article().espaciadoCapas=Number(this.value);
     $('layerSpacingVal').textContent=Math.round(Number(this.value)*100)+'%';
     drawBoard();
   });
-  $('layerSpacing').addEventListener('change',function(){persist();});
+  $('layerSpacing').addEventListener('change',function(){endHistory();persist();});
+  function populateParallax(){
+    var p=article().parallax||{activo:false,intensidad:.35};
+    $('parallaxEnabled').checked=p.activo===true;
+    $('parallaxIntensity').value=Math.round(safeNumber(p.intensidad,.35)*100);
+    $('parallaxIntensityVal').textContent=$('parallaxIntensity').value+'%';
+    $('parallaxIntensity').disabled=!p.activo;
+  }
+  function updateParallax(){
+    if(!article())return;
+    beginHistory();
+    article().parallax={activo:$('parallaxEnabled').checked,intensidad:Number($('parallaxIntensity').value)/100};
+    populateParallax();persistQuiet();
+    note('Parallax del cuadro actualizado. El móvil puede solicitar permiso de movimiento al abrir la cámara.');
+  }
+  ['parallaxEnabled','parallaxIntensity'].forEach(function(id){
+    $(id).addEventListener('input',updateParallax);
+    $(id).addEventListener('change',function(){updateParallax();endHistory();});
+  });
+  function drawPresets(){
+    var select=$('presetSelect'),presets=article().presets||[];
+    select.replaceChildren(new Option('Selecciona un preset',''));
+    presets.forEach(function(p){select.add(new Option(p.nombre,p.id));});
+    $('applyPreset').disabled=!presets.length;$('deletePreset').disabled=!presets.length;
+  }
+  var presetFields=['x','y','z','separacionZ','ancho','alto','escalaUniforme','escalaX','escalaY','rotation','rotationX','rotationY','pivotX','pivotY','opacidad','visible','sombra','animacion'];
+  function saveCompositionPreset(){
+    var art=article(),name=$('presetName').value.trim();
+    if(!name){note('Escribe un nombre para guardar el preset.');return;}
+    checkpoint();
+    art.presets=art.presets||[];
+    var preset={id:newId('preset'),nombre:name,espaciadoCapas:art.espaciadoCapas,parallax:Object.assign({},art.parallax),
+      capas:art.capas.map(function(layer){var row={id:layer.id};presetFields.forEach(function(key){row[key]=key==='sombra'||key==='animacion'?JSON.parse(JSON.stringify(layer[key]||{})):layer[key];});return row;})};
+    art.presets.push(preset);$('presetName').value='';drawPresets();$('presetSelect').value=preset.id;persistQuiet();note('Preset «'+name+'» guardado para este cuadro.');
+  }
+  function applyCompositionPreset(){
+    var art=article(),preset=(art.presets||[]).find(function(p){return p.id===$('presetSelect').value;});
+    if(!preset)return;
+    checkpoint();art.espaciadoCapas=preset.espaciadoCapas;art.parallax=Object.assign({},preset.parallax);
+    preset.capas.forEach(function(row){var layer=art.capas.find(function(l){return l.id===row.id;});if(!layer)return;
+      presetFields.forEach(function(key){if(row[key]!==undefined)layer[key]=key==='sombra'||key==='animacion'?JSON.parse(JSON.stringify(row[key])):row[key];});
+    });
+    render();persistQuiet();note('Preset «'+preset.nombre+'» aplicado.');
+  }
+  function deleteCompositionPreset(){
+    var art=article();if(!art)return;
+    checkpoint();art.presets=art.presets.filter(function(p){return p.id!==$('presetSelect').value;});
+    drawPresets();persistQuiet();note('Preset eliminado.');
+  }
+  $('savePreset').addEventListener('click',saveCompositionPreset);
+  $('applyPreset').addEventListener('click',applyCompositionPreset);
+  $('deletePreset').addEventListener('click',deleteCompositionPreset);
   $('resetSpacing').addEventListener('click',function(){
     if(!article())return;
+    checkpoint();
     article().espaciadoCapas=.02;
     $('layerSpacing').value='.02';
     drawBoard();persist();
@@ -461,15 +642,17 @@ dialog h2{font-size:21px;margin:0 0 8px}
   });
   $('artTitle').addEventListener('change',function(){
     if(!article())return;
+    checkpoint();
     article().nombre=this.value.trim()||article().id;render();note('Nombre del cuadro actualizado en el borrador.');
   });
   $('toBack').addEventListener('click',function(){move(-1);});
   $('toFront').addEventListener('click',function(){move(1);});
-  function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
+  function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;checkpoint();var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
   $('applyDepthPreset').addEventListener('click',function(){
     var art=article(),layers=art&&art.capas;
     if(!layers||layers.length<2){note('Agrega al menos dos capas para distribuir la profundidad.');return;}
     if(!confirm('Este preset distribuirá la profundidad Z y asignará movimientos diferentes a todas las capas. Podrás personalizarlas después. ¿Continuar?'))return;
+    checkpoint();
     var types=['flotar','pulso','girar','desplazar','balancear'];
     layers.forEach(function(layer,index){
       var t=index/Math.max(1,layers.length-1),type=types[index%types.length];
@@ -480,7 +663,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     render();persist();
     note('Preset 2.5D aplicado: profundidad escalonada y movimientos independientes. Ajusta cada capa si lo necesitas.');
   });
-  $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
+  $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;checkpoint();article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
   $('save').addEventListener('click',persist);
   $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;localStorage.removeItem(draftKey);loadDefault();});
   $('export').addEventListener('click',function(){
@@ -756,6 +939,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       };
       catalog.cuadros.push(art);reindex();invalidateTracking();
       selectedArtId=art.id;selectedId=art.capas[0].id;render();
+      checkpoint();
       $('createDialog').close();
       note('Cuadro «'+art.nombre+'» agregado al borrador. Guarda y exporta el JSON como respaldo.');
     }catch(err){$('createStatus').textContent=err.message;note(err.message);}
@@ -764,6 +948,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   $('deleteArt').addEventListener('click',function(){
     if(!catalog||catalog.cuadros.length<2){note('Debes conservar al menos un cuadro.');return;}
     var old=article();if(!confirm('¿Eliminar «'+old.nombre+'» del borrador?'))return;
+    checkpoint();
     catalog.cuadros=catalog.cuadros.filter(function(a){return a.id!==selectedArtId;});
     reindex();invalidateTracking();setActiveArt(catalog.cuadros[0].id);
     note('Cuadro eliminado del borrador. No se modificaron los archivos de GitHub.');
@@ -771,6 +956,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   function moveArt(offset){
     var list=catalog.cuadros,i=list.findIndex(function(a){return a.id===selectedArtId;}),j=i+offset;
     if(i<0||j<0||j>=list.length)return;
+    checkpoint();
     var t=list[i];list[i]=list[j];list[j]=t;reindex();invalidateTracking();render();
     note('Orden de cuadros actualizado para el reconocimiento AR.');
   }
@@ -791,6 +977,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     if(!files.length)return;
     try{
       if(article().capas.length+files.length>15)throw Error('Máximo 15 capas por cuadro.');
+      checkpoint();
       for(var i=0;i<files.length;i++){
         var file=files[i];
         if(file.type!=='image/png')throw Error('Todas las capas deben ser PNG con transparencia.');
@@ -809,7 +996,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
   });
   $('changeTarget').addEventListener('change',async function(){
     var file=this.files[0];if(!file)return;
-    try{var image=await resized(file,768,'image/jpeg');if(Math.abs(image.ratio-aspect)>.01)throw Error('La referencia debe tener la misma proporción del lienzo.');article().imagenObjetivo=image.src;invalidateTracking();render();note('Referencia física reemplazada en este borrador.');}
+    try{var image=await resized(file,768,'image/jpeg');if(Math.abs(image.ratio-aspect)>.01)throw Error('La referencia debe tener la misma proporción del lienzo.');checkpoint();article().imagenObjetivo=image.src;invalidateTracking();render();note('Referencia física reemplazada en este borrador.');}
     catch(e){note(e.message);}
     this.value='';
   });

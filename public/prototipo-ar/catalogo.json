@@ -23,9 +23,9 @@
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "pulso",
-            "amplitud": 0.025,
-            "duracionMs": 2800
+            "tipo": "flotar",
+            "amplitud": 0.012,
+            "duracionMs": 3400
           }
         },
         {
@@ -36,14 +36,14 @@
           "alto": 1.2496947,
           "x": 0,
           "y": 0,
-          "z": 0.03,
+          "z": 0.07,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.018,
-            "duracionMs": 3400
+            "tipo": "pulso",
+            "amplitud": 0.017,
+            "duracionMs": 3075
           }
         },
         {
@@ -54,14 +54,14 @@
           "alto": 1.2496947,
           "x": 0,
           "y": 0,
-          "z": 0.05,
+          "z": 0.125,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.015,
-            "duracionMs": 3000
+            "tipo": "girar",
+            "amplitud": 7,
+            "duracionMs": 2750
           }
         },
         {
@@ -72,14 +72,14 @@
           "alto": 1.2496947,
           "x": 0,
           "y": 0,
-          "z": 0.075,
+          "z": 0.18,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "pulso",
-            "amplitud": 0.018,
-            "duracionMs": 2400
+            "tipo": "flotar",
+            "amplitud": 0.025,
+            "duracionMs": 2425
           }
         },
         {
@@ -90,17 +90,24 @@
           "alto": 1.2496947,
           "x": 0,
           "y": 0,
-          "z": 0.105,
+          "z": 0.235,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.012,
+            "tipo": "pulso",
+            "amplitud": 0.03,
             "duracionMs": 2100
           }
         }
-      ]
+      ],
+      "efectoEmergencia": {
+        "activo": true,
+        "duracionMs": 1600,
+        "escalaInicial": 0.62,
+        "intensidad": "cinematografica",
+        "destello": true
+      }
     },
     {
       "id": "cuadro-mwa975aj-6lp",
@@ -122,9 +129,9 @@
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "pulso",
-            "amplitud": 0,
-            "duracionMs": 2500
+            "tipo": "flotar",
+            "amplitud": 0.012,
+            "duracionMs": 3400
           }
         },
         {
@@ -135,14 +142,14 @@
           "alto": 1.25,
           "x": -0.16,
           "y": 0,
-          "z": 0.035,
+          "z": 0.088,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.015,
-            "duracionMs": 2500
+            "tipo": "pulso",
+            "amplitud": 0.018,
+            "duracionMs": 2967
           }
         },
         {
@@ -153,14 +160,14 @@
           "alto": 1.25,
           "x": 0,
           "y": -0.205,
-          "z": 0.055,
+          "z": 0.162,
           "rotation": 0,
           "opacidad": 1,
           "visible": true,
           "animacion": {
-            "tipo": "flotar",
-            "amplitud": 0.015,
-            "duracionMs": 2500
+            "tipo": "girar",
+            "amplitud": 8,
+            "duracionMs": 2533
           }
         },
         {
@@ -171,21 +178,21 @@
           "alto": 1.35,
           "x": 0.2,
           "y": 0.18,
-          "z": 0.1,
+          "z": 0.235,
           "rotation": 9,
           "opacidad": 1,
           "visible": true,
           "animacion": {
             "tipo": "flotar",
-            "amplitud": 0.015,
-            "duracionMs": 2500
+            "amplitud": 0.03,
+            "duracionMs": 2100
           }
         }
       ],
       "efectoEmergencia": {
         "activo": true,
-        "duracionMs": 1000,
-        "escalaInicial": 0.85,
+        "duracionMs": 1600,
+        "escalaInicial": 0.62,
         "intensidad": "cinematografica",
         "destello": true
       }

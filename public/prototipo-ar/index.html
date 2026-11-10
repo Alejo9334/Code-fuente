@@ -335,19 +335,35 @@
     scene.style.cssText='position:absolute; inset:0; width:100%; height:100%;';
     var collections = new Map();
     artworkGroups=[];
+    // Efecto 2.5D configurable por imagen; no requiere modelos 3D ni cambia MindAR.
+    function emergenceSettings(art){
+      var p=art.efectoEmergencia||{};
+      var intensity=['suave','media','cinematografica'].includes(p.intensidad)?p.intensidad:'cinematografica';
+      return {
+        enabled:p.activo!==false,
+        duration:Math.max(500,Math.min(3000,Number(p.duracionMs)||1400)),
+        initialScale:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.7)),
+        intensity:intensity,
+        flash:p.destello!==false
+      };
+    }
     function resetReveal(group){
       group.sequence++;
       if(group.frame){cancelAnimationFrame(group.frame);group.frame=0;}
       group.wrappers.forEach(function(wrapper){
         wrapper.object3D.visible=false;
-        wrapper.object3D.scale.setScalar(.82);
-        wrapper.object3D.position.z=-.055;
+        wrapper.object3D.scale.setScalar(1);
+        wrapper.object3D.position.z=0;
+        var mesh=wrapper.layerPlane.getObject3D('mesh');
+        if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
       });
     }
     function revealArtwork(group) {
       resetReveal(group);
+      var settings=emergenceSettings(group.art);
       var version=group.sequence;
-      if(motionReduced){
+      // Evitar movimiento con las preferencias de accesibilidad activadas.
+      if(motionReduced||!settings.enabled){
         group.wrappers.forEach(function(wrapper){
           wrapper.object3D.visible=true;
           wrapper.object3D.scale.setScalar(1);
@@ -357,8 +373,11 @@
         });
         return;
       }
+      if(settings.flash)pulseRecognition();
       var startTime=null;
-      var delayBetween=Math.min(110,500/Math.max(1,group.wrappers.length-1));
+      var delayBetween=Math.min(110,settings.duration*.075);
+      var perLayerDuration=Math.max(380,settings.duration-delayBetween*(group.wrappers.length-1));
+      var distance={suave:.045,media:.10,cinematografica:.18}[settings.intensity];
       function frame(now){
         if(version!==group.sequence||!tracked.has(group.art.id))return;
         if(startTime===null)startTime=now;
@@ -366,12 +385,15 @@
         group.wrappers.forEach(function(wrapper,i){
           var elapsed=now-startTime-i*delayBetween;
           if(elapsed<0){wrapper.object3D.visible=false;complete=false;return;}
-          var t=Math.min(1,elapsed/650);
+          var t=Math.min(1,elapsed/perLayerDuration);
           if(t<1)complete=false;
+          // Salida rápida con aterrizaje suave; escalonado fondo -> frente.
           var ease=1-Math.pow(1-t,3);
           wrapper.object3D.visible=true;
-          wrapper.object3D.scale.setScalar(.82+.18*ease);
-          wrapper.object3D.position.z=-.055*(1-ease);
+          wrapper.object3D.scale.setScalar(settings.initialScale+(1-settings.initialScale)*ease);
+          // El plano inicia detrás de la imagen y termina en el Z configurado
+          // en el editor; nunca se modifica la posición permanente del PNG.
+          wrapper.object3D.position.z=-distance*(1-ease);
           var mesh=wrapper.layerPlane.getObject3D('mesh');
           if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha*ease;
         });
@@ -402,7 +424,7 @@
       target.addEventListener('targetFound', function () {
         tracked.add(art.id);
         document.body.classList.add('detected');
-        pulseRecognition();
+        if(emergenceSettings(art).destello!==false)pulseRecognition();
         var trackingVersion=group.sequence;
         if(!group.loaded) {
           say('Imagen reconocida. Cargando capas de '+art.nombre+'…','Cargando capas');

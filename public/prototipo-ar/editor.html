@@ -143,7 +143,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 </div>
 <div class="canvas-wrap"><div id="artboard" class="artboard" data-view="perspectiva"><img id="physical" class="physical" alt="Imagen física de referencia"></div></div>
 <div class="spacing-toolbar">
-  <div class="field spacing-field"><label for="layerSpacing">Separación global entre PNG <output id="layerSpacingVal">0.010</output></label><input id="layerSpacing" type="range" min="0" max="0.08" step="0.002" value="0.020"></div>
+  <div class="field spacing-field"><label for="layerSpacing">Separación global entre PNG <output id="layerSpacingVal">2%</output></label><input id="layerSpacing" type="range" min="0" max="0.08" step="0.002" value="0.020"></div>
   <button id="resetSpacing" class="subtle" type="button">Restablecer separación</button>
 </div>
 <div class="controls" style="margin-top:14px">
@@ -301,6 +301,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
         l.opacidad=safeNumber(l.opacidad,1);
         l.visible=l.visible!==false;
         l.animacion=l.animacion||{tipo:'ninguna',amplitud:0,duracionMs:2000};
+        if(!['ninguna','flotar','pulso','girar','desplazar','balancear'].includes(l.animacion.tipo))l.animacion.tipo='ninguna';
       });
     });
     return raw;
@@ -629,7 +630,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
         compact(l.opacidad),l.visible===false?0:1,types[a.tipo]===undefined?0:types[a.tipo],
         compact(a.amplitud),Math.round(safeNumber(a.duracionMs,2000))];
     });
-    var data=JSON.stringify([1,art.id,rows]);
+    rows.forEach(function(row,index){row.push(compact(safeNumber(art.capas[index].separacionZ,0)));});
+    var data=JSON.stringify([2,art.id,compact(safeNumber(art.espaciadoCapas,.02)),rows]);
     var encoded=btoa(data).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
     var url=new URL('./index.html',location.href);
     url.searchParams.set('share',encoded);

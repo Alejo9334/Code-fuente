@@ -188,3 +188,17 @@ Abre `preparar-imagen.html` desde Preview. Puedes elegir una **imagen física de
 4. El repositorio de Preview recoge los cambios de la rama de desarrollo con su flujo periódico o manual. El usuario debe comprobar el visor desde un celular antes de promocionar una imagen nueva.
 
 **Limitaciones actuales:** el panel **no puede subir directamente a GitHub** sin un sistema de autenticación seguro. Requiere que el dueño confirme la subida en GitHub. No se deben pegar tokens personales de acceso en la página. Cuando se configure el administrador con backend seguro, se podrá ofrecer publicación directa de un clic. Este preparador es público, aunque no publica nada por sí mismo; las imágenes que se suban al repositorio público son accesibles para cualquiera. No se modifica la rama `main`.
+
+## Acceso a editores en modo local (sin Supabase)
+
+En la rama de desarrollo el **editor visual** (`editor.html`) está habilitado sin inicio de sesión. Los proyectos y cambios se guardan en el almacenamiento local del navegador; también se pueden importar y exportar como JSON. Se conservaron las pruebas con cámara AR y los enlaces QR. La antigua página `login.html` informa que el inicio de sesión quedó desactivado y redirige al editor.
+
+Los botones de guardar/cargar proyectos en **nube privada** se retiraron del editor, y no se importa ni ejecuta `admin-auth.js` ni el cliente Supabase desde él. Los archivos de configuración e infraestructura de Supabase permanecen en el repositorio, sin activar, por si se decide implementar autenticación en el futuro.
+
+- **Cliente:** recibe únicamente la URL `index.html` (o la raíz de Preview), sin cuenta.
+- **Edición local:** utiliza `editor.html` y/o `preparar-imagen.html`, sin cuenta.
+- **Publicación:** el operador debe entrar a GitHub con permisos de escritura y subir el archivo de proyecto a `proyectos/pendientes/`, para activar el flujo automático en la rama de desarrollo.
+
+**No confundir un enlace no divulgado con acceso privado:** los editores se alojan en GitHub Pages y cualquier persona que conozca su URL puede abrirlos y preparar sus propios borradores en su dispositivo. No pueden modificar el catálogo publicado sin credenciales autorizadas de GitHub. No subir contenido privado a GitHub Pages ni al repositorio público.
+
+La rama principal de Visor-222 permanece sin cambios.

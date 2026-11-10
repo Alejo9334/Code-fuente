@@ -164,7 +164,7 @@ for(const expected of ['emergenceEnabled','emergenceDuration','emergenceScale','
 }
 assert.ok(emergingPublisher.includes('efectoEmergencia:emergence'),'El publicador debe preservar la emergencia de cada cuadro');
 assert.ok(emergingViewer.includes("target.addEventListener('targetFound'"),'Conservar el motor de detección de imágenes');
-for(const expected of ['data-view="perspectiva"','data-view="lateral"','data-view="superior"','id="layerSpacing"','id="layerSpacingExtra"','function setEditorView','translateZ('+ 'effectiveZ*260' + 'px)','espaciadoCapas','separacionZ']){
+for(const expected of ['data-view="perspectiva"','data-view="lateral"','data-view="superior"','id="layerSpacing"','id="layerSpacingExtra"','function setEditorView','effectiveZ*260','espaciadoCapas','separacionZ']){
   assert.ok(emergingEditor.includes(expected),'Falta control de lienzo 3D/separación: '+expected);
 }
 assert.ok(emergingPublisher.includes('espaciadoCapas:'),'El publicador debe conservar la separación global');

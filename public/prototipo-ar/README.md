@@ -176,3 +176,15 @@ Se incorporaron tres efectos exclusivamente en el visor público de desarrollo:
 Las personas con la opción «reducir movimiento» habilitada reciben una confirmación estática y el contenido AR aparece sin transición. La experiencia no introduce sonidos ni cambia las referencias de MindAR, el archivo .mind o el comportamiento de los PNG del catálogo.
 
 Verificar en Android/iPhone real la disponibilidad de pantalla completa, la estabilidad del seguimiento y la transición de capas. Todo está publicado primero en Preview; la rama principal permanece intacta.
+
+## Panel para preparar nuevas imágenes AR sin organizar carpetas
+
+Abre `preparar-imagen.html` desde Preview. Puedes elegir una **imagen física de referencia** (PNG/JPG), subir hasta **15 capas PNG**, reordenarlas de fondo a frente y ajustar profundidad, amplitud de animación y opacidad. El panel empaqueta las imágenes en un único JSON `<id>-<fecha>.json` directamente en el navegador y no transmite contraseñas ni tokens.
+
+**Publicación segura en dos pasos:**
+1. Descarga el JSON desde el panel y usa el enlace «Abrir GitHub para subir el archivo».
+2. Inicia sesión en GitHub y sube el archivo a `proyectos/pendientes/` de la rama `desarrollo/multicuadros-ar-v2`; confirma el commit. Cada archivo tiene nombre único, no requiere editar JSON ni organizar carpetas.
+3. El flujo `.github/workflows/publicar-cuadros-desarrollo.yml` detecta el archivo, incorpora los nuevos cuadros al catálogo sin borrar los anteriores (`--apply --append`), extrae los archivos incrustados a `public/prototipo-ar/cuadros/<id>/`, optimiza PNG a WebP y genera el nuevo `targets.mind`.
+4. El repositorio de Preview recoge los cambios de la rama de desarrollo con su flujo periódico o manual. El usuario debe comprobar el visor desde un celular antes de promocionar una imagen nueva.
+
+**Limitaciones actuales:** el panel **no puede subir directamente a GitHub** sin un sistema de autenticación seguro. Requiere que el dueño confirme la subida en GitHub. No se deben pegar tokens personales de acceso en la página. Cuando se configure el administrador con backend seguro, se podrá ofrecer publicación directa de un clic. Este preparador es público, aunque no publica nada por sí mismo; las imágenes que se suban al repositorio público son accesibles para cualquiera. No se modifica la rama `main`.

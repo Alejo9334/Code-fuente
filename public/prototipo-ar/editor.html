@@ -82,7 +82,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <button class="subtle" id="export">Descargar proyecto JSON</button>
 <button class="subtle" id="shareAR">Probar en mi celular · QR</button>
 <button id="tryAR">Probar en cámara AR</button>
-<a href="./preparar-imagen.html" class="subtle editor-link">Preparar nuevo cuadro</a>
+<button id="publishSelected" class="subtle" type="button">Preparar publicación en GitHub</button>
 </div>
 </header>
 <div class="wrap">
@@ -102,13 +102,13 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="group-label">Capas · fondo → frente</div>
 <div class="layerlist" id="layerlist"></div>
 <div class="group-label">Añadir archivos</div>
-<div class="field"><label for="addPng">Agregar capa PNG</label><input id="addPng" type="file" accept="image/png"></div>
+<div class="field"><label for="addPng">Agregar capas PNG (selección múltiple)</label><input id="addPng" type="file" accept="image/png" multiple></div>
 <div class="field" style="margin-top:12px"><label for="changeTarget">Cambiar imagen impresa</label><input id="changeTarget" type="file" accept="image/png,image/jpeg,image/webp"></div>
 <div class="group-label">Proyecto guardado</div>
 <div class="controls"><button class="subtle" id="save">Guardar borrador local</button><button class="subtle" id="importButton">Importar JSON</button></div>
 <div class="group-label">Edición local · Sin inicio de sesión</div>
 <p class="muted">Los cambios se guardan únicamente en este navegador. Descarga el JSON para hacer una copia de seguridad. Publicar imágenes requiere confirmar el archivo en tu cuenta de GitHub.</p>
-<div class="controls"><a class="editor-link" href="./preparar-imagen.html">Preparar paquete para GitHub</a></div>
+<div class="controls"><button id="publishSidebar" class="subtle" type="button">Preparar cuadro seleccionado para GitHub</button></div><p class="muted">Primero crea un cuadro con «+ Nuevo cuadro», personaliza sus capas y prepara su publicación desde aquí.</p>
 <input id="importFile" type="file" accept="application/json,.json" hidden>
 </aside>
 <main class="center">
@@ -121,7 +121,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <label class="switch"><input id="animatePreview" type="checkbox" checked> Animar vista previa</label>
 </div>
 </section>
-<div class="notice"><strong>Editor de acceso controlado:</strong> se requiere una cuenta administradora autorizada. El proyecto se puede guardar en la nube privada cuando esté configurada. Guardar aquí no publica automáticamente nuevas obras para clientes: la aplicación principal sigue intacta y el QR utiliza solo imágenes publicadas.</div>
+<div class="notice"><strong>Un solo panel para tus imágenes:</strong> crea cuadros, añade capas, ajusta sus efectos y prepara la publicación aquí mismo. Los borradores permanecen en tu navegador; solo una cuenta con permisos de GitHub puede publicar. El cliente usa exclusivamente el visor AR.</div>
 <div class="status" id="status" role="status" aria-live="polite"></div>
 </main>
 <aside class="panel right">
@@ -144,7 +144,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="controls full"><button id="remove" class="danger">Eliminar capa</button></div>
 </aside>
 </div>
-<footer><div class="notice">Cada cuadro tiene una imagen física distinta y sus propias capas, ordenadas de fondo a frente. Para probar varios cuadros en un mismo celular, importa el JSON en el editor de ese teléfono y pulsa «Probar en cámara AR». La transferencia local usa almacenamiento del navegador; no publiques enlaces con datos privados. Guarda el JSON como respaldo antes de cerrar.</div></footer>
+<footer><div class="notice">Trabaja en un solo lugar: selecciona la referencia impresa, crea capas PNG, configura sus animaciones y genera el archivo de publicación del cuadro activo. El enlace de los clientes sigue siendo solamente el visor AR. Descarga un respaldo JSON antes de cerrar; el proyecto local no se sincroniza automáticamente entre equipos.</div></footer>
 <dialog id="createDialog" aria-labelledby="createTitle">
 <h2 id="createTitle">Nuevo cuadro AR</h2>
 <p class="muted" id="createDescription">Registra una imagen única para el reconocimiento y al menos una capa PNG con transparencia.</p>
@@ -156,6 +156,17 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="dialog-buttons"><button type="submit" id="createConfirm">Crear cuadro</button><button type="button" class="subtle" id="cancelCreate">Cancelar</button></div>
 </form>
 <p class="muted" id="createStatus" role="status"></p>
+</dialog>
+<dialog id="publishDialog" aria-labelledby="publishTitle">
+<h2 id="publishTitle">Publicar nuevo cuadro en GitHub</h2>
+<p class="muted">El editor generará un solo archivo de publicación con la imagen de referencia, las capas PNG y los ajustes actuales. No se necesitan carpetas manuales ni contraseñas en este panel.</p>
+<p class="notice">Solo puedes <strong>agregar cuadros nuevos</strong> por este flujo. Si el ID ya existe en el visor publicado, no sobrescribiremos su contenido. La publicación se confirma en GitHub con una cuenta autorizada.</p>
+<div class="status" id="publishStatus" role="status" aria-live="polite">Selecciona el cuadro y prepara su paquete.</div>
+<div class="dialog-buttons"><button id="downloadPublish" type="button">Descargar archivo publicable</button><button class="subtle" id="closePublish" type="button">Cerrar</button></div>
+<div id="publishReady" hidden>
+<a class="editor-link" id="publishGithub" href="https://github.com/Alejo9334/Visor-222/upload/desarrollo/multicuadros-ar-v2/proyectos/pendientes" target="_blank" rel="noopener noreferrer">Abrir GitHub para subir el JSON</a>
+<p class="muted">En GitHub, sube el JSON descargado a la carpeta <code>proyectos/pendientes/</code> de la rama de desarrollo y confirma «Commit changes». El flujo automático compilará el reconocimiento y optimizará las imágenes. La vista Preview se actualizará tras su despliegue.</p>
+</div>
 </dialog>
 <dialog id="shareDialog" aria-labelledby="shareTitle">
 <h2 id="shareTitle">Probar el cuadro en tu celular</h2>

@@ -216,16 +216,8 @@
     if (!Number.isFinite(degrees)) degrees = 0;
     var plane = element('a-entity', { position: position, rotation: '0 0 ' + degrees });
     plane.userDataLayer = { w: w, h: h, alpha: Math.max(0,Math.min(1,alpha)) };
-    var anim = layer.animacion || {};
-    var amp = Number(anim.amplitud || 0);
-    var dur = Math.max(350, Number(anim.duracionMs || 1800));
-    if (anim.tipo === 'flotar' && amp > 0) {
-      plane.setAttribute('animation__flotar', 'property: position; from: ' + position + '; to: ' + [x,y+amp,z].join(' ') + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
-    } else if (anim.tipo === 'pulso' && amp > 0) {
-      plane.setAttribute('animation__pulso', 'property: scale; from: 1 1 1; to: ' + [1+amp,1+amp,1].join(' ') + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
-    } else if (anim.tipo === 'girar' && amp !== 0) {
-      plane.setAttribute('animation__girar', 'property: rotation; from: 0 0 0; to: 0 0 ' + amp + '; dur: ' + dur + '; dir: alternate; loop: true; easing: easeInOutSine');
-    }
+    // El movimiento de todas las capas se controla desde su wrapper 2.5D.
+    // Así se evita duplicar animaciones A-Frame y se mantienen independientes.
     return plane;
   }
 

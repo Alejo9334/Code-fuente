@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html', 'public/prototipo-ar/optimizar.html']) {
+for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html', 'public/prototipo-ar/optimizar.html', 'public/prototipo-ar/preparar-imagen.html']) {
   const html = fs.readFileSync(filename, 'utf8');
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
   assert.ok(scripts.length > 0, filename + ' must include a script');
@@ -134,3 +134,10 @@ for(const flag of ['recognitionPulse','pulseRecognition','revealArtwork','resetR
 assert.ok(cinematic.includes('La magia está frente a ti'),'Debe mantenerse el mensaje de bienvenida seleccionado');
 assert.ok(cinematic.includes('Activa tu cámara y observa cómo las imágenes cobran vida ante tus ojos.'),'Debe mantenerse la descripción de bienvenida');
 console.log('Confirmación de reconocimiento, revelado cinematográfico y modo inmersivo incluidos.');
+
+const imageUploader=fs.readFileSync('public/prototipo-ar/preparar-imagen.html','utf8');
+for(const expected of ['FileReader','imagenObjetivo','capas:layers.map','application/json','proyectos/pendientes','layerFiles','referencePreview','GitHub']){
+  assert.ok(imageUploader.includes(expected),'El preparador de imágenes debe incluir '+expected);
+}
+assert.ok(!imageUploader.includes('Authorization: Bearer'),'El panel público no debe solicitar credenciales de GitHub');
+console.log('Carga asistida de imágenes sin tokens en navegador verificada');

@@ -107,6 +107,27 @@
   var texturesReady = false;
   var assetsPromise = null;
   var artworkGroups=[];
+  var deviceParallax={x:0,y:0};
+  var parallaxCurrent={x:0,y:0};
+  var parallaxListenerActive=false;
+  function handleDeviceOrientation(event){
+    var gamma=Number(event.gamma),beta=Number(event.beta);
+    if(Number.isFinite(gamma))deviceParallax.x=Math.max(-1,Math.min(1,gamma/35));
+    if(Number.isFinite(beta))deviceParallax.y=Math.max(-1,Math.min(1,beta/45));
+  }
+  async function enableDeviceParallax(){
+    if(parallaxListenerActive)return true;
+    if(!window.DeviceOrientationEvent)return false;
+    try{
+      if(typeof window.DeviceOrientationEvent.requestPermission==='function'){
+        var permission=await window.DeviceOrientationEvent.requestPermission();
+        if(permission!=='granted')return false;
+      }
+      window.addEventListener('deviceorientation',handleDeviceOrientation,true);
+      parallaxListenerActive=true;
+      return true;
+    }catch(error){console.warn('Permiso de orientación no concedido',error);return false;}
+  }
 
   function say(text, short) {
     message.textContent = text;
@@ -214,8 +235,13 @@
     // muestre un material blanco mientras intenta resolver #asset-id.
     var degrees = Number(layer.rotation || 0);
     if (!Number.isFinite(degrees)) degrees = 0;
-    var plane = element('a-entity', { position: position, rotation: '0 0 ' + degrees });
-    plane.userDataLayer = { w: w, h: h, alpha: Math.max(0,Math.min(1,alpha)) };
+    var plane = element('a-entity', { position: '0 0 0', rotation: '0 0 0' });
+    var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined?.5:layer.pivotX)));
+    var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined?.5:layer.pivotY)));
+    plane.userDataLayer = {
+      w:w,h:h,alpha:Math.max(0,Math.min(1,alpha)),
+      pivotOffsetX:(pivotX-.5)*w,pivotOffsetY:(.5-pivotY)*h
+    };
     // El movimiento de todas las capas se controla desde su wrapper 2.5D.
     // Así se evita duplicar animaciones A-Frame y se mantienen independientes.
     return plane;
@@ -237,7 +263,24 @@
       try { await img.decode(); } catch(err) { /* onload ya confirmó los píxeles */ }
     }
     var THREE = AFRAME.THREE;
-    var texture = new THREE.Texture(img);
+    var textureSource=img,shadow=layer.sombra||{};
+    if(shadow.activo===true){
+      var blur=Math.max(0,Math.min(40,Number(shadow.desenfoque)||0));
+      var offsetX=Math.max(-30,Math.min(30,Number(shadow.x)||0));
+      var offsetY=Math.max(-30,Math.min(30,Number(shadow.y)||0));
+      var alpha=Math.max(0,Math.min(1,(Number(shadow.opacidad)||0)/100));
+      var pad=Math.max(2,Math.ceil(blur*2+Math.max(Math.abs(offsetX),Math.abs(offsetY))+2));
+      var canvas=document.createElement('canvas');
+      canvas.width=img.naturalWidth+pad*2;canvas.height=img.naturalHeight+pad*2;
+      var context=canvas.getContext('2d');
+      context.shadowColor='rgba(0,0,0,'+alpha+')';context.shadowBlur=blur;
+      context.shadowOffsetX=offsetX;context.shadowOffsetY=offsetY;
+      context.drawImage(img,pad,pad);
+      context.shadowColor='rgba(0,0,0,0)';context.shadowBlur=0;context.shadowOffsetX=0;context.shadowOffsetY=0;
+      context.drawImage(img,pad,pad);
+      textureSource=canvas;
+    }
+    var texture = new THREE.Texture(textureSource);
     texture.needsUpdate = true;
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.flipY = true;
@@ -251,8 +294,12 @@
       side: THREE.DoubleSide,
       toneMapped: false
     });
-    var geometry = new THREE.PlaneGeometry(plane.userDataLayer.w,plane.userDataLayer.h);
+    var geometry = new THREE.PlaneGeometry(
+      plane.userDataLayer.w*(textureSource.width/img.naturalWidth),
+      plane.userDataLayer.h*(textureSource.height/img.naturalHeight)
+    );
     var mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(-plane.userDataLayer.pivotOffsetX,-plane.userDataLayer.pivotOffsetY,0);
     mesh.renderOrder = order;
     plane.setObject3D('mesh',mesh);
     return true;
@@ -355,40 +402,50 @@
         wrapper.object3D.visible=false;
         wrapper.object3D.scale.setScalar(1);
         wrapper.object3D.position.set(base.x,base.y,base.z);
-        wrapper.object3D.rotation.z=wrapper.baseRotation||0;
-        wrapper.object3D.rotation.y=wrapper.baseRotationY||0;
+        wrapper.object3D.rotation.set(wrapper.baseRotationX||0,wrapper.baseRotationY||0,wrapper.baseRotation||0);
         var mesh=wrapper.layerPlane.getObject3D('mesh');
         if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
       });
     }
     function startLayerMotion(group,version){
-      if(motionReduced||!tracked.has(group.art.id))return;
+      var parallax=group.art.parallax||{},parallaxEnabled=parallax.activo===true;
+      var hasMotion=group.wrappers.some(function(wrapper){return wrapper.motionSpec&&wrapper.motionSpec.type&&wrapper.motionSpec.type!=='ninguna';});
+      if(motionReduced||!tracked.has(group.art.id)||(!hasMotion&&!parallaxEnabled))return;
       var startTime=null;
       function frame(now){
         if(version!==group.sequence||!tracked.has(group.art.id)){group.motionFrame=0;return;}
         if(startTime===null)startTime=now;
         var elapsed=(now-startTime)/1000;
+        parallaxCurrent.x+=(deviceParallax.x-parallaxCurrent.x)*.14;
+        parallaxCurrent.y+=(deviceParallax.y-parallaxCurrent.y)*.14;
+        var parallaxScale=parallaxEnabled?Math.max(0,Math.min(1,Number(parallax.intensidad)||0))*.025:0;
         group.wrappers.forEach(function(wrapper){
           var spec=wrapper.motionSpec||{};
           var base=wrapper.basePosition||{x:0,y:0,z:-.055};
-          if(!spec.type||spec.type==='ninguna')return;
-          var phase=(elapsed/spec.period)*Math.PI*2+spec.phase;
+          var dx=parallaxCurrent.x*parallaxScale,dy=-parallaxCurrent.y*parallaxScale,dz=0;
+          var phase=(elapsed/Math.max(.1,spec.period||2))*Math.PI*2+(spec.phase||0);
           var wave=Math.sin(phase);
           if(spec.type==='flotar'){
-            wrapper.object3D.position.x=base.x+Math.cos(phase*.72)*spec.x;
-            wrapper.object3D.position.y=base.y+wave*spec.y;
-            wrapper.object3D.position.z=base.z+Math.sin(phase*.61)*spec.z;
+            dx+=Math.cos(phase*.72)*spec.x;dy+=wave*spec.y;dz+=Math.sin(phase*.61)*spec.z;
           }else if(spec.type==='pulso'){
-            wrapper.object3D.scale.setScalar(1+wave*spec.scale);
-            wrapper.object3D.position.z=base.z+wave*spec.z;
+            wrapper.object3D.scale.setScalar(1+wave*spec.scale);dz+=wave*spec.z;
           }else if(spec.type==='girar'){
-            wrapper.object3D.rotation.z=(wrapper.baseRotation||0)+wave*spec.rotation;
-            wrapper.object3D.position.y=base.y+wave*spec.y;
+            wrapper.object3D.rotation.z=(wrapper.baseRotation||0)+wave*spec.rotation;dy+=wave*spec.y;
           }else if(spec.type==='desplazar'){
-            wrapper.object3D.position.x=base.x+wave*spec.slideX;
+            dx+=wave*spec.slideX;
           }else if(spec.type==='balancear'){
             wrapper.object3D.rotation.y=(wrapper.baseRotationY||0)+wave*spec.tilt;
+          }else if(spec.type==='trayectoria'){
+            var pathWave=phase,amp=spec.pathAmplitude||0;
+            if(spec.pathShape==='ocho'){dx+=Math.sin(pathWave)*amp;dy+=Math.sin(pathWave*2)*amp*.5;}
+            else if(spec.pathShape==='arco'){dx+=Math.sin(pathWave)*amp;dy+=(1-Math.cos(pathWave))*amp*.5;}
+            else{dx+=Math.cos(pathWave)*amp;dy+=Math.sin(pathWave)*amp;}
           }
+          wrapper.object3D.position.set(base.x+dx,base.y+dy,base.z+dz);
+          if(spec.type!=='pulso')wrapper.object3D.scale.setScalar(1);
+          if(spec.type!=='girar'&&spec.type!=='balancear')wrapper.object3D.rotation.set(wrapper.baseRotationX||0,wrapper.baseRotationY||0,wrapper.baseRotation||0);
+          else if(spec.type==='girar')wrapper.object3D.rotation.set(wrapper.baseRotationX||0,wrapper.baseRotationY||0,(wrapper.baseRotation||0)+wave*spec.rotation);
+          else wrapper.object3D.rotation.set(wrapper.baseRotationX||0,(wrapper.baseRotationY||0)+wave*spec.tilt,wrapper.baseRotation||0);
         });
         group.motionFrame=requestAnimationFrame(frame);
       }
@@ -407,7 +464,7 @@
           var mesh=wrapper.layerPlane.getObject3D('mesh');
           if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
         });
-        if(settings.enabled)startLayerMotion(group,version);
+        if(settings.enabled||(group.art.parallax&&group.art.parallax.activo))startLayerMotion(group,version);
         return;
       }
       var startTime=null;
@@ -534,9 +591,14 @@
         var amplitude=Math.abs(Number(anim.amplitud)||0);
         var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
         wrapper.depthFactor=depth;
-        wrapper.basePosition={x:0,y:0,z:-.055+physicalDepth*.28};
-        wrapper.baseRotation=0;
-        wrapper.baseRotationY=0;
+        var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined?.5:layer.pivotX)));
+        var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined?.5:layer.pivotY)));
+        var pivotOffsetX=(pivotX-.5)*Number(layer.ancho||1);
+        var pivotOffsetY=(.5-pivotY)*Number(layer.alto||1);
+        wrapper.basePosition={x:(Number(layer.x)||0)+pivotOffsetX,y:(Number(layer.y)||0)+pivotOffsetY,z:-.055+physicalDepth*.28};
+        wrapper.baseRotationX=(Number(layer.rotationX)||0)*Math.PI/180;
+        wrapper.baseRotationY=(Number(layer.rotationY)||0)*Math.PI/180;
+        wrapper.baseRotation=(Number(layer.rotation)||0)*Math.PI/180;
         wrapper.motionSpec={
           type:type,period:period,phase:i*1.137,
           x:.0015+depth*.002,
@@ -547,7 +609,8 @@
           slideX:Math.min(.035,amplitude*.035),
           tilt:Math.min(.45,amplitude*Math.PI/180)
         };
-        wrapper.object3D.position.set(0,0,wrapper.basePosition.z);
+        wrapper.object3D.position.set(wrapper.basePosition.x,wrapper.basePosition.y,wrapper.basePosition.z);
+        wrapper.object3D.rotation.set(wrapper.baseRotationX,wrapper.baseRotationY,wrapper.baseRotation);
       });
       scene.appendChild(target);
     });
@@ -582,6 +645,11 @@
     try {
       var system=scene.systems['mindar-image-system'];
       if (!system) throw new Error('No se cargó el motor de reconocimiento.');
+      var needsParallax=artworkGroups.some(function(group){return group.art.parallax&&group.art.parallax.activo;});
+      if(needsParallax){
+        var orientationReady=await enableDeviceParallax();
+        if(!orientationReady)say('La cámara funcionará normalmente; este dispositivo no concedió acceso al movimiento para el efecto parallax.','Parallax no disponible');
+      }
       await system.start();
       document.body.classList.add('running');
       say('Apunta al cuadro registrado y mantén el teléfono estable.', 'Buscando cuadro');

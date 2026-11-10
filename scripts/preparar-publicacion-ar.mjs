@@ -87,11 +87,21 @@ const output={
       }
       if(l.ancho<=0||l.alto<=0||Math.abs(l.x)>1||Math.abs(l.y)>1||l.z<0||l.z>1||l.opacidad<0||l.opacidad>1)
         throw Error('Dimensiones fuera de rango: '+layerId);
-      const a=l.animacion||{},type=['ninguna','flotar','pulso','girar','desplazar','balancear'].includes(a.tipo)?a.tipo:'ninguna';
+      const a=l.animacion||{},type=['ninguna','flotar','pulso','girar','desplazar','balancear','trayectoria'].includes(a.tipo)?a.tipo:'ninguna';
       return {
         id:layerId,nombre:String(l.nombre||layerId).slice(0,100),imagen:image,
         ancho:Number(l.ancho),alto:Number(l.alto),x:Number(l.x),y:Number(l.y),z:Number(l.z),
-        rotation:Number(l.rotation||0),opacidad:Number(l.opacidad),
+        rotation:Number(l.rotation||0),rotationX:Number.isFinite(Number(l.rotationX))?Number(l.rotationX):0,
+        rotationY:Number.isFinite(Number(l.rotationY))?Number(l.rotationY):0,
+        pivotX:Math.max(0,Math.min(1,Number.isFinite(Number(l.pivotX))?Number(l.pivotX):.5)),
+        pivotY:Math.max(0,Math.min(1,Number.isFinite(Number(l.pivotY))?Number(l.pivotY):.5)),
+        sombra:{
+          activo:l.sombra&&l.sombra.activo===true,
+          desenfoque:Math.max(0,Math.min(40,Number.isFinite(Number(l.sombra&&l.sombra.desenfoque))?Number(l.sombra.desenfoque):12)),
+          x:Math.max(-30,Math.min(30,Number.isFinite(Number(l.sombra&&l.sombra.x))?Number(l.sombra.x):0)),
+          y:Math.max(-30,Math.min(30,Number.isFinite(Number(l.sombra&&l.sombra.y))?Number(l.sombra.y):8)),
+          opacidad:Math.max(0,Math.min(100,Number.isFinite(Number(l.sombra&&l.sombra.opacidad))?Number(l.sombra.opacidad):35))
+        },
         baseAncho:Number.isFinite(Number(l.baseAncho))?Number(l.baseAncho):Number(l.ancho),
         baseAlto:Number.isFinite(Number(l.baseAlto))?Number(l.baseAlto):Number(l.alto),
         escalaUniforme:Math.max(.25,Math.min(3,Number.isFinite(Number(l.escalaUniforme))?Number(l.escalaUniforme):1)),
@@ -101,7 +111,11 @@ const output={
         visible:l.visible!==false,
         animacion:{
           tipo:type,amplitud:Number.isFinite(Number(a.amplitud))?Number(a.amplitud):0,
-          duracionMs:Number.isFinite(Number(a.duracionMs))?Number(a.duracionMs):2000
+          duracionMs:Number.isFinite(Number(a.duracionMs))?Number(a.duracionMs):2000,
+          trayectoria:{
+            forma:['circulo','ocho','arco'].includes(a.trayectoria&&a.trayectoria.forma)?a.trayectoria.forma:'circulo',
+            amplitud:Math.max(0,Math.min(1,Number.isFinite(Number(a.trayectoria&&a.trayectoria.amplitud))?Number(a.trayectoria.amplitud):.35))
+          }
         }
       };
     });
@@ -116,6 +130,10 @@ const output={
     return {id,nombre:String(art.nombre||id).slice(0,100),targetIndex:index,
       relacionAltoAncho:ratio,imagenObjetivo:target,
       espaciadoCapas:Math.max(0,Math.min(.08,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.02)),
+      parallax:{
+        activo:art.parallax&&art.parallax.activo===true,
+        intensidad:Math.max(0,Math.min(1,Number.isFinite(Number(art.parallax&&art.parallax.intensidad))?Number(art.parallax.intensidad):.35))
+      },
       capas:layers,efectoEmergencia:emergence};
   })
 };

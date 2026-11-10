@@ -806,15 +806,19 @@ dialog h2{font-size:21px;margin:0 0 8px}
     if(art.id!=='cuadro-creeper-001' || art.capas.some(function(l){return originalIds.indexOf(l.id)<0 || /^data:/i.test(l.imagen);})) {
       throw Error('El QR funciona con las capas publicadas del cuadro Creeper. Para capas nuevas debes subir los PNG a GitHub antes de compartirlas.');
     }
-    var types={ninguna:0,flotar:1,pulso:2,girar:3,desplazar:4,balancear:5};
+    var types={ninguna:0,flotar:1,pulso:2,girar:3,desplazar:4,balancear:5,trayectoria:6};
+    var shapes={circulo:0,ocho:1,arco:2};
     var rows=art.capas.map(function(l){
-      var a=l.animacion||{};
+      var a=l.animacion||{},path=a.trayectoria||{},shadow=l.sombra||{};
       return [l.id,compact(l.x),compact(l.y),compact(l.z),compact(l.ancho),compact(l.alto),compact(l.rotation),
         compact(l.opacidad),l.visible===false?0:1,types[a.tipo]===undefined?0:types[a.tipo],
-        compact(a.amplitud),Math.round(safeNumber(a.duracionMs,2000))];
+        compact(a.amplitud),Math.round(safeNumber(a.duracionMs,2000)),compact(safeNumber(l.separacionZ,0)),
+        compact(safeNumber(l.pivotX,.5)),compact(safeNumber(l.pivotY,.5)),compact(safeNumber(l.rotationX,0)),compact(safeNumber(l.rotationY,0)),
+        shadow.activo===true?1:0,compact(safeNumber(shadow.desenfoque,12)),compact(safeNumber(shadow.x,0)),compact(safeNumber(shadow.y,8)),
+        compact(safeNumber(shadow.opacidad,35)),shapes[path.forma]===undefined?0:shapes[path.forma],compact(safeNumber(path.amplitud,.35))];
     });
-    rows.forEach(function(row,index){row.push(compact(safeNumber(art.capas[index].separacionZ,0)));});
-    var data=JSON.stringify([2,art.id,compact(safeNumber(art.espaciadoCapas,.02)),rows]);
+    var parallax=art.parallax||{};
+    var data=JSON.stringify([3,art.id,compact(safeNumber(art.espaciadoCapas,.02)),parallax.activo===true?1:0,compact(safeNumber(parallax.intensidad,.35)),rows]);
     var encoded=btoa(data).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
     var url=new URL('./index.html',location.href);
     url.searchParams.set('share',encoded);
@@ -927,14 +931,15 @@ dialog h2{font-size:21px;margin:0 0 8px}
             imagen:im.src,
             baseAncho:1,baseAlto:ratio,ancho:1,alto:ratio,
             escalaUniforme:1,escalaX:1,escalaY:1,
-            x:0,y:0,z:Math.min(1,.015+(i*.02)),rotation:0,opacidad:1,visible:true,
-            animacion:{tipo:'flotar',amplitud:.15,duracionMs:2500}
+            x:0,y:0,z:Math.min(1,.015+(i*.02)),rotation:0,rotationX:0,rotationY:0,pivotX:.5,pivotY:.5,
+            sombra:{activo:false,desenfoque:12,x:0,y:8,opacidad:35},opacidad:1,visible:true,
+            animacion:{tipo:'flotar',amplitud:.15,duracionMs:2500,trayectoria:{forma:'circulo',amplitud:.35}}
           });
         }
       }
       var art={
         id:newId('cuadro'),nombre:name,targetIndex:catalog.cuadros.length,
-        relacionAltoAncho:ratio,imagenObjetivo:target.src,espaciadoCapas:.02,capas:layers,
+        relacionAltoAncho:ratio,imagenObjetivo:target.src,espaciadoCapas:.02,parallax:{activo:false,intensidad:.35},presets:[],capas:layers,
         efectoEmergencia:normalizeEmergence()
       };
       checkpoint();catalog.cuadros.push(art);reindex();invalidateTracking();
@@ -985,8 +990,9 @@ dialog h2{font-size:21px;margin:0 0 8px}
         if(Math.abs(image.ratio-aspect)>.01)throw Error('El PNG '+file.name+' debe tener la misma proporción del cuadro.');
         var id=newId('capa'),l={id:id,nombre:file.name.replace(/\.png$/i,''),imagen:image.src,
           baseAncho:1,baseAlto:aspect,ancho:1,alto:aspect,x:0,y:0,
-          z:Math.min(.3,.015+(article().capas.length*.02)),rotation:0,opacidad:1,visible:true,
-          animacion:{tipo:'flotar',amplitud:.015,duracionMs:2500}};
+          z:Math.min(1,.015+(article().capas.length*.02)),rotation:0,rotationX:0,rotationY:0,pivotX:.5,pivotY:.5,
+          sombra:{activo:false,desenfoque:12,x:0,y:8,opacidad:35},opacidad:1,visible:true,
+          animacion:{tipo:'flotar',amplitud:.15,duracionMs:2500,trayectoria:{forma:'circulo',amplitud:.35}}};
         article().capas.push(l);selectedId=l.id;
       }
       render();note('Se agregaron '+files.length+' capas. Puedes ordenarlas y prepararlas para GitHub desde este editor.');

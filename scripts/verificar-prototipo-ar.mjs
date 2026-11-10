@@ -171,15 +171,24 @@ assert.ok(emergingPublisher.includes('espaciadoCapas:'),'El publicador debe cons
 assert.ok(emergingPublisher.includes('separacionZ:'),'El publicador debe conservar la separación individual');
 assert.ok(emergingViewer.includes('var globalGap='),'El visor debe aplicar separación global');
 assert.ok(emergingViewer.includes('physicalDepth*.28'),'El visor debe convertir la separación guardada en profundidad AR');
-assert.ok(emergingViewer.includes('packetVersion===2'),'El visor debe aceptar el formato QR actualizado');
+assert.ok(emergingViewer.includes('![1,2,3].includes(packet[0])'),'El visor debe aceptar los formatos QR anteriores y v3');
+for(const expected of ['id="undo"','id="redo"','function historySnapshot','function undo()','function redo()','id="pivotPreset"','id="pivotX"','id="pivotY"','id="rotationX"','id="rotationY"','id="shadowEnabled"','id="shadowBlur"','id="pathShape"','id="pathAmplitude"','id="parallaxEnabled"','id="parallaxIntensity"','id="savePreset"','id="applyPreset"','function saveCompositionPreset','function applyCompositionPreset','JSON.stringify([3,art.id']){
+  assert.ok(emergingEditor.includes(expected),'Falta una herramienta avanzada del editor: '+expected);
+}
+for(const expected of ['rotationX:Number.isFinite','rotationY:Number.isFinite','pivotX:Math.max','pivotY:Math.max','sombra:{','trayectoria:{','parallax:{']){
+  assert.ok(emergingPublisher.includes(expected),'El publicador no conserva la nueva propiedad: '+expected);
+}
+for(const expected of ['pivotOffsetX','pivotOffsetY','rotation.set(wrapper.baseRotationX','function enableDeviceParallax','deviceorientation','spec.type===\'trayectoria\'','shadow.activo===true','shadowBlur','art.parallax']){
+  assert.ok(emergingViewer.includes(expected),'El visor AR no implementa la nueva capacidad: '+expected);
+}
 for(const expected of ['id="scaleX"','id="scaleY"','id="animationType"','value="desplazar"','value="balancear"','@keyframes slideX','@keyframes rock3d','max="0.08"','max="3"','max="15000"','espaciadoCapas=Math.max(0,Math.min(.08','escalaX','escalaY']){
   assert.ok(emergingEditor.includes(expected),'Falta control ampliado o animación independiente: '+expected);
 }
-for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type<0 || type>5"]){
+for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","spec.type==='trayectoria'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type<0 || type>5"]){
   assert.ok(emergingViewer.includes(expected),'El visor AR no procesa el nuevo ajuste: '+expected);
 }
 for(const expected of ["'desplazar','balancear'","separacionZ:Math.max(-.08","espaciadoCapas:Math.max(0,Math.min(.08","escalaX:Math.max(.25","escalaY:Math.max(.25"]){
   assert.ok(emergingPublisher.includes(expected),'El publicador no conserva el ajuste: '+expected);
 }
-console.log('Lienzo 3D, escalas X/Y, rangos ampliados y seis animaciones verificadas de editor a visor');
+console.log('Editor avanzado: pivotes, rotaciones XYZ, historial, sombras, trayectorias, parallax y presets verificados');
 console.log('Efecto 2.5D y nuevas propiedades preservadas desde editor hasta publicación AR');

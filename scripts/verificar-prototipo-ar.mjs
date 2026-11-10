@@ -156,7 +156,7 @@ console.log('Carga, animaciones y exportación segura a GitHub integradas en un 
 const emergingViewer=fs.readFileSync('public/prototipo-ar/index.html','utf8');
 const emergingEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
 const emergingPublisher=fs.readFileSync('scripts/preparar-publicacion-ar.mjs','utf8');
-for(const expected of ['emergenceSettings','settings.initialScale','settings.duration','travel*(1-ease)','motionReduced','emergenceSettings(art).flash','startLayerMotion','wrapper.depthFactor','wrapper.motionSpec','ease-out con un pequeño rebote']){
+for(const expected of ['emergenceSettings','settings.initialScale','settings.duration','travel*(1-ease)','motionReduced','emergenceSettings(art).flash','startLayerMotion','wrapper.depthFactor','wrapper.motionSpec','Ease-out con un pequeño rebote']){
   assert.ok(emergingViewer.includes(expected),'Falta componente de la emergencia 2.5D: '+expected);
 }
 for(const expected of ['emergenceEnabled','emergenceDuration','emergenceScale','emergenceIntensity','emergenceFlash','normalizeEmergence','populateEmergence','efectoEmergencia:normalizeEmergence','applyDepthPreset','Aplicar profundidad + movimiento 2.5D']){

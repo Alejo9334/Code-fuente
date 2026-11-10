@@ -7,12 +7,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Visor-222 | Editor visual de capas</title>
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080f1c;color:#eef6ff;color-scheme:dark}html:not(.admin-verified) body{visibility:hidden}*{box-sizing:border-box}body{margin:0}
+:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080f1c;color:#eef6ff;color-scheme:dark}*{box-sizing:border-box}body{margin:0}
 [hidden]{display:none!important}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
 header{height:72px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #233147;gap:12px;background:#0d1828}
 .brand{font-size:20px;font-weight:850;letter-spacing:-.06em}.brand em{color:#58cafd;font-style:normal}.brand small{font-size:12px;color:#90a8c5;font-weight:500;letter-spacing:0}
 button{background:#50c9f0;color:#072032;padding:11px 15px;border:0;border-radius:12px;font-size:13px;font-weight:750}
-button.subtle{background:#1b2b40;color:#d8e9fb;border:1px solid #3b5371}
+button.subtle,.editor-link{background:#1b2b40;color:#d8e9fb;border:1px solid #3b5371}.editor-link{display:inline-flex;align-items:center;padding:11px 15px;text-decoration:none;border-radius:12px;font-size:13px;font-weight:750}
 button.danger{background:#3b2230;color:#ffc6cd;border:1px solid #664051}
 .wrap{display:grid;grid-template-columns:260px minmax(340px,1fr) 300px;gap:16px;max-width:1600px;margin:auto;padding:18px}
 .panel{border-radius:18px;background:#101c2e;border:1px solid #253751;padding:17px;min-width:0}
@@ -82,7 +82,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <button class="subtle" id="export">Descargar proyecto JSON</button>
 <button class="subtle" id="shareAR">Probar en mi celular · QR</button>
 <button id="tryAR">Probar en cámara AR</button>
-<button id="logoutAdmin" class="danger">Cerrar sesión</button>
+<a href="./preparar-imagen.html" class="subtle editor-link">Preparar nuevo cuadro</a>
 </div>
 </header>
 <div class="wrap">
@@ -106,9 +106,9 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="field" style="margin-top:12px"><label for="changeTarget">Cambiar imagen impresa</label><input id="changeTarget" type="file" accept="image/png,image/jpeg,image/webp"></div>
 <div class="group-label">Proyecto guardado</div>
 <div class="controls"><button class="subtle" id="save">Guardar borrador local</button><button class="subtle" id="importButton">Importar JSON</button></div>
-<div class="group-label">Proyecto privado</div>
-<div class="controls"><button id="saveCloud">Guardar en nube privada</button><button id="loadCloud" class="subtle">Cargar desde nube</button></div>
-<p class="muted">Guardado protegido por autenticación y reglas de la base de datos. La publicación del visor para clientes continúa separada.</p>
+<div class="group-label">Edición local · Sin inicio de sesión</div>
+<p class="muted">Los cambios se guardan únicamente en este navegador. Descarga el JSON para hacer una copia de seguridad. Publicar imágenes requiere confirmar el archivo en tu cuenta de GitHub.</p>
+<div class="controls"><a class="editor-link" href="./preparar-imagen.html">Preparar paquete para GitHub</a></div>
 <input id="importFile" type="file" accept="application/json,.json" hidden>
 </aside>
 <main class="center">
@@ -167,11 +167,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <p class="muted" id="qrStatus" role="status"></p>
 </dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="./auth-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="./admin-auth.js"></script>
 <script>
-window.VISOR222_ADMIN.onReady(async function(){
+(async function(){
   'use strict';
   var $=function(id){return document.getElementById(id);};
   var draftKey='visor222-editor-visual-v1';
@@ -344,29 +341,6 @@ window.VISOR222_ADMIN.onReady(async function(){
   function move(delta){var layers=article().capas,i=layers.findIndex(function(l){return l.id===selectedId;});var target=i+delta;if(target<0||target>=layers.length)return;var temp=layers[i];layers[i]=layers[target];layers[target]=temp;render();note('Orden de profundidad actualizado.');}
   $('remove').addEventListener('click',function(){if(article().capas.length<2){note('Debes conservar por lo menos una capa.');return;}if(!confirm('¿Eliminar esta capa del borrador?'))return;article().capas=article().capas.filter(function(l){return l.id!==selectedId;});selectedId=article().capas[0].id;render();note('Capa eliminada del borrador.');});
   $('save').addEventListener('click',persist);
-  $('logoutAdmin').addEventListener('click',function(){window.VISOR222_ADMIN.signOut();});
-  $('saveCloud').addEventListener('click',async function(){
-    if(!catalog)return;
-    $('saveCloud').disabled=true;note('Guardando proyecto en la nube privada…');
-    try{
-      reindex();
-      await window.VISOR222_ADMIN.saveProject(catalog);
-      note('Proyecto guardado correctamente en la base de datos privada.');
-    }catch(err){note('No se pudo guardar: '+err.message);}
-    finally{$('saveCloud').disabled=false;}
-  });
-  $('loadCloud').addEventListener('click',async function(){
-    if(!confirm('¿Cargar el proyecto privado y reemplazar los cambios actuales en pantalla? Exporta un JSON antes si quieres conservarlos.'))return;
-    $('loadCloud').disabled=true;note('Cargando proyecto de la nube privada…');
-    try{
-      var result=await window.VISOR222_ADMIN.loadProject();
-      if(!result){note('Aún no hay un proyecto guardado en la nube privada.');return;}
-      catalog=normalize(result.project);
-      selectedArtId=catalog.cuadros[0].id;selectedId=article().capas[0].id;
-      render();persist();note('Proyecto privado cargado desde la nube.');
-    }catch(err){note('No se pudo cargar: '+err.message);}
-    finally{$('loadCloud').disabled=false;}
-  });
   $('reset').addEventListener('click',function(){if(!confirm('¿Restablecer los valores publicados y perder los cambios de este borrador?'))return;localStorage.removeItem(draftKey);loadDefault();});
   $('export').addEventListener('click',function(){
     if(!catalog)return;

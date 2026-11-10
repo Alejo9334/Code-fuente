@@ -81,18 +81,20 @@ const authScript=fs.readFileSync('public/prototipo-ar/admin-auth.js','utf8');
 new vm.Script(authScript,{filename:'admin-auth.js'});
 const configScript=fs.readFileSync('public/prototipo-ar/auth-config.js','utf8');
 new vm.Script(configScript,{filename:'auth-config.js'});
-const protectedEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
-assert.ok(protectedEditor.includes('html:not(.admin-verified) body{visibility:hidden}'),'Debe ocultarse el editor hasta validar permisos');
-assert.ok(protectedEditor.includes('window.VISOR222_ADMIN.onReady(async function()'),'No debe ejecutarse la edición sin sesión autorizada');
-assert.ok(protectedEditor.includes('saveCloud')&&protectedEditor.includes('loadCloud'),'Faltan controles de proyecto privado');
+const localEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
+assert.ok(localEditor.includes('(async function(){'),'El editor debe funcionar sin Supabase');
+assert.ok(!localEditor.includes('VISOR222_ADMIN'),'El editor local no debe depender de la sesión administrativa');
+assert.ok(!localEditor.includes('saveCloud')&&!localEditor.includes('loadCloud'),'No deben mostrarse controles de nube privada sin autenticación');
+assert.ok(!localEditor.includes('admin-verified'),'El editor no debe ocultarse esperando permisos');
+assert.ok(localEditor.includes('Guardar borrador local')&&localEditor.includes('Descargar proyecto JSON'),'Debe conservar guardado local y exportación');
 const login=fs.readFileSync('public/prototipo-ar/login.html','utf8');
-assert.ok(login.includes('service.signIn'),'El login no verifica credenciales en Supabase');
+assert.ok(login.includes('url=./editor.html')&&login.includes('Supabase está desactivado'),'La ruta de acceso anterior debe apuntar al editor local');
 const schema=fs.readFileSync('public/prototipo-ar/supabase-admin.sql','utf8');
 for(const required of ['row level security','visor222_admins','visor222_admin_projects','for insert to authenticated','for select to authenticated']) {
   assert.ok(schema.includes(required),'Falta configuración RLS: '+required);
 }
 assert.ok(!authScript.includes('service_role'),'Nunca debe usarse la clave service_role en el navegador');
-console.log('Autenticación Supabase, verificación admin y reglas RLS incluidas');
+console.log('Editor local sin autenticación ni escritura en nube; backend Supabase reservado para futura activación');
 
 const catalogFast=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
 if(catalogFast.archivoMind){

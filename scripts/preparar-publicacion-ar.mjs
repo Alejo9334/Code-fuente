@@ -10,7 +10,9 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const SITE=path.join(ROOT,'public','prototipo-ar');
 const args=process.argv.slice(2);
 const apply=args.includes('--apply');
-const source=args.find(arg=>arg!=='--apply');
+const append=args.includes('--append');
+if(append&&!apply)throw Error('Para agregar cuadros usa --append junto con --apply');
+const source=args.find(arg=>arg!=='--apply'&&arg!=='--append');
 if(!source)throw Error('Uso: node scripts/preparar-publicacion-ar.mjs proyectos/por-publicar.json [--apply]');
 const INPUT=path.resolve(ROOT,source);
 if(!INPUT.startsWith(path.join(ROOT,'proyectos')+path.sep)||!INPUT.endsWith('.json'))
@@ -101,6 +103,18 @@ const output={
       relacionAltoAncho:ratio,imagenObjetivo:target,capas:layers};
   })
 };
+if(append){
+  const current=JSON.parse(fs.readFileSync(path.join(SITE,'catalogo.json'),'utf8'));
+  if(!Array.isArray(current.cuadros))throw Error('El catálogo existente no contiene cuadros');
+  const existingIds=new Set(current.cuadros.map(art=>art.id));
+  const collision=output.cuadros.find(art=>existingIds.has(art.id));
+  if(collision)throw Error('Este cuadro ya existe. Cambia su identificador: '+collision.id);
+  if(current.cuadros.length+output.cuadros.length>30)throw Error('El catálogo admite hasta 30 cuadros');
+  output.cuadros=[
+    ...current.cuadros.map((art,i)=>({...art,targetIndex:i})),
+    ...output.cuadros.map((art,i)=>({...art,targetIndex:current.cuadros.length+i}))
+  ];
+}
 fs.mkdirSync(TARGET,{recursive:true});
 const dest=path.join(TARGET,'catalogo.json');
 const staged=dest+'.tmp';

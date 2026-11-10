@@ -236,8 +236,8 @@
     var degrees = Number(layer.rotation || 0);
     if (!Number.isFinite(degrees)) degrees = 0;
     var plane = element('a-entity', { position: '0 0 0', rotation: '0 0 0' });
-    var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined?.5:layer.pivotX)));
-    var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined?.5:layer.pivotY)));
+    var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined ? 0.5 : layer.pivotX)));
+    var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined ? 0.5 : layer.pivotY)));
     plane.userDataLayer = {
       w:w,h:h,alpha:Math.max(0,Math.min(1,alpha)),
       pivotOffsetX:(pivotX-.5)*w,pivotOffsetY:(.5-pivotY)*h
@@ -587,7 +587,7 @@
         var depth=maxDepth-minDepth>.001?(effectiveDepth-minDepth)/(maxDepth-minDepth):i/Math.max(1,group.wrappers.length-1);
         depth=Math.max(0,Math.min(1,depth));
         var physicalDepth=Math.max(0,Math.min(.75,effectiveDepth-minDepth));
-        var type=['flotar','pulso','girar','desplazar','balancear'].includes(anim.tipo)?anim.tipo:'ninguna';
+        var type=['flotar','pulso','girar','desplazar','balancear','trayectoria'].includes(anim.tipo)?anim.tipo:'ninguna';
         var amplitude=Math.abs(Number(anim.amplitud)||0);
         var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
         wrapper.depthFactor=depth;
@@ -607,7 +607,9 @@
           scale:.008+Math.min(.055,amplitude*.06),
           rotation:Math.min(.045,(amplitude||8)*Math.PI/180*.2),
           slideX:Math.min(.035,amplitude*.035),
-          tilt:Math.min(.45,amplitude*Math.PI/180)
+          tilt:Math.min(.45,amplitude*Math.PI/180),
+          pathShape:(anim.trayectoria&&['circulo','ocho','arco'].includes(anim.trayectoria.forma))?anim.trayectoria.forma:'circulo',
+          pathAmplitude:Math.max(0,Math.min(1,Number(anim.trayectoria&&anim.trayectoria.amplitud)||.35))*.035
         };
         wrapper.object3D.position.set(wrapper.basePosition.x,wrapper.basePosition.y,wrapper.basePosition.z);
         wrapper.object3D.rotation.set(wrapper.baseRotationX,wrapper.baseRotationY,wrapper.baseRotation);
@@ -687,49 +689,47 @@
   // El QR lleva únicamente los parámetros de capa. Los PNG siempre se
   // cargan de los archivos ya publicados; no se transmiten imágenes privadas.
   function applySharedPreview(data, code) {
-    if(!code || code.length>4000 || !/^[A-Za-z0-9_-]+$/.test(code)) {
-      throw new Error('El enlace QR no es válido.');
-    }
-    var raw = atob(code.replace(/-/g,'+').replace(/_/g,'/'));
-    var packet = JSON.parse(raw);
-    if(!Array.isArray(packet) || ![1,2].includes(packet[0]) || typeof packet[1]!=='string') {
-      throw new Error('Formato de vista previa no reconocido.');
-    }
-    var packetVersion=packet[0];
-    var globalGap;
-    var rows=packetVersion===2?packet[3]:packet[2];
-    var art=data.cuadros.find(function(x){return x.id===packet[1];});
+    if(!code || code.length>4000 || !/^[A-Za-z0-9_-]+$/.test(code))throw new Error('El enlace QR no es válido.');
+    var packet=JSON.parse(atob(code.replace(/-/g,'+').replace(/_/g,'/')));
+    if(!Array.isArray(packet)||![1,2,3].includes(packet[0])||typeof packet[1]!=='string')throw new Error('Formato de vista previa no reconocido.');
+    var version=packet[0],art=data.cuadros.find(function(x){return x.id===packet[1];});
     if(!art)throw new Error('Este cuadro no está registrado en la vista previa.');
-    if(packetVersion===2)globalGap=packet[2];
-    else globalGap=art.espaciadoCapas;
+    var globalGap=version===3?packet[2]:version===2?packet[2]:art.espaciadoCapas;
+    var rows=version===3?packet[5]:version===2?packet[3]:packet[2];
+    if(version===3){
+      if((packet[3]!==0&&packet[3]!==1)||!Number.isFinite(packet[4])||packet[4]<0||packet[4]>1)throw new Error('Parallax QR fuera de rango.');
+      art.parallax={activo:!!packet[3],intensidad:packet[4]};
+    }
     if(!Array.isArray(rows)||rows.length>art.capas.length||rows.length===0)throw new Error('Cantidad de capas incompatible.');
     if(!Number.isFinite(Number(globalGap))||Number(globalGap)<0||Number(globalGap)>.08)throw new Error('Separación global fuera de rango.');
     var registry=new Map(art.capas.map(function(l){return [l.id,l];}));
-    var seen=new Set(), types=['ninguna','flotar','pulso','girar','desplazar','balancear'];
+    var seen=new Set(),types=['ninguna','flotar','pulso','girar','desplazar','balancear','trayectoria'],shapes=['circulo','ocho','arco'];
     var layers=rows.map(function(row){
-      var expectedLength=packetVersion===2?13:12;
-      if(!Array.isArray(row) || row.length!==expectedLength || !registry.has(row[0]) || seen.has(row[0])) {
-        throw new Error('El enlace contiene capas desconocidas o repetidas.');
-      }
+      var expectedLength=version===3?24:version===2?13:12;
+      if(!Array.isArray(row)||row.length!==expectedLength||!registry.has(row[0])||seen.has(row[0]))throw new Error('El enlace contiene capas desconocidas o repetidas.');
       seen.add(row[0]);
       var valid=row.slice(1);
-      if(valid.some(function(v){return typeof v!=='number' || !Number.isFinite(v);}))throw new Error('Parámetros de capa inválidos.');
+      if(valid.some(function(v){return typeof v!=='number'||!Number.isFinite(v);}))throw new Error('Parámetros de capa inválidos.');
       var x=row[1],y=row[2],z=row[3],w=row[4],h=row[5],rotation=row[6],alpha=row[7],visible=row[8],type=row[9],amp=row[10],dur=row[11];
-      var layerGap=packetVersion===2?row[12]:Number(registry.get(row[0]).separacionZ)||0;
-      if(Math.abs(x)>1 || Math.abs(y)>1 || z<0 || z>1 || w<=0 || w>9 || h<=0 || h>12 ||
-         Math.abs(rotation)>360 || alpha<0 || alpha>1 || (visible!==0&&visible!==1) ||
-         !Number.isInteger(type) || type<0 || type>5 || amp<0 || amp>90 || dur<350 || dur>20000 ||
-         !Number.isFinite(layerGap) || layerGap<-.08 || layerGap>.08) {
-        throw new Error('El enlace contiene valores fuera de rango.');
-      }
+      var layerGap=version>=2?row[12]:Number(registry.get(row[0]).separacionZ)||0;
+      if(Math.abs(x)>1||Math.abs(y)>1||z<0||z>1||w<=0||w>9||h<=0||h>12||
+        Math.abs(rotation)>360||alpha<0||alpha>1||(visible!==0&&visible!==1)||
+        !Number.isInteger(type)||type<0||type>(version===3?6:5)||amp<0||amp>90||dur<350||dur>20000||
+        !Number.isFinite(layerGap)||layerGap<-.08||layerGap>.08)throw new Error('El enlace contiene valores fuera de rango.');
       var l=Object.assign({},registry.get(row[0]));
-      l.x=x;l.y=y;l.z=z;l.ancho=w;l.alto=h;l.rotation=rotation;
-      l.opacidad=alpha;l.visible=!!visible;l.separacionZ=layerGap;
-      l.animacion={tipo:types[type],amplitud:amp,duracionMs:dur};
+      l.x=x;l.y=y;l.z=z;l.ancho=w;l.alto=h;l.rotation=rotation;l.opacidad=alpha;l.visible=!!visible;l.separacionZ=layerGap;
+      if(version===3){
+        var pivotX=row[13],pivotY=row[14],rotX=row[15],rotY=row[16],shadowEnabled=row[17],shadowBlur=row[18],shadowX=row[19],shadowY=row[20],shadowOpacity=row[21],shape=row[22],pathAmp=row[23];
+        if(pivotX<0||pivotX>1||pivotY<0||pivotY>1||Math.abs(rotX)>180||Math.abs(rotY)>180||
+          (shadowEnabled!==0&&shadowEnabled!==1)||shadowBlur<0||shadowBlur>40||Math.abs(shadowX)>30||Math.abs(shadowY)>30||
+          shadowOpacity<0||shadowOpacity>100||!Number.isInteger(shape)||shape<0||shape>2||pathAmp<0||pathAmp>1)throw new Error('Parámetros 3D o de sombra fuera de rango.');
+        l.pivotX=pivotX;l.pivotY=pivotY;l.rotationX=rotX;l.rotationY=rotY;
+        l.sombra={activo:!!shadowEnabled,desenfoque:shadowBlur,x:shadowX,y:shadowY,opacidad:shadowOpacity};
+        l.animacion={tipo:types[type],amplitud:amp,duracionMs:dur,trayectoria:{forma:shapes[shape],amplitud:pathAmp}};
+      }else l.animacion={tipo:types[type],amplitud:amp,duracionMs:dur};
       return l;
     });
-    art.espaciadoCapas=Number(globalGap);
-    art.capas=layers;
+    art.espaciadoCapas=Number(globalGap);art.capas=layers;
     return data;
   }
 

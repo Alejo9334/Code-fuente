@@ -83,6 +83,7 @@ const configScript=fs.readFileSync('public/prototipo-ar/auth-config.js','utf8');
 new vm.Script(configScript,{filename:'auth-config.js'});
 const localEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
 assert.ok(localEditor.includes('(async function(){'),'El editor debe funcionar sin Supabase');
+assert.ok(localEditor.includes('})();\n</script>'),'El editor local debe ejecutarse al abrir la página');
 assert.ok(!localEditor.includes('VISOR222_ADMIN'),'El editor local no debe depender de la sesión administrativa');
 assert.ok(!localEditor.includes('saveCloud')&&!localEditor.includes('loadCloud'),'No deben mostrarse controles de nube privada sin autenticación');
 assert.ok(!localEditor.includes('admin-verified'),'El editor no debe ocultarse esperando permisos');

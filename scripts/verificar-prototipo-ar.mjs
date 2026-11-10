@@ -148,3 +148,16 @@ assert.ok(!unifiedEditor.includes('VISOR222_ADMIN'),'La edición local debe func
 const oldPrepare=fs.readFileSync('public/prototipo-ar/preparar-imagen.html','utf8');
 assert.ok(oldPrepare.includes('url=./editor.html'),'El panel anterior debe redirigir al editor unificado');
 console.log('Carga, animaciones y exportación segura a GitHub integradas en un solo editor.');
+
+const emergingViewer=fs.readFileSync('public/prototipo-ar/index.html','utf8');
+const emergingEditor=fs.readFileSync('public/prototipo-ar/editor.html','utf8');
+const emergingPublisher=fs.readFileSync('scripts/preparar-publicacion-ar.mjs','utf8');
+for(const expected of ['emergenceSettings','settings.initialScale','settings.duration','distance*(1-ease)','motionReduced','settings.flash']){
+  assert.ok(emergingViewer.includes(expected),'Falta componente de la emergencia 2.5D: '+expected);
+}
+for(const expected of ['emergenceEnabled','emergenceDuration','emergenceScale','emergenceIntensity','emergenceFlash','normalizeEmergence','populateEmergence','efectoEmergencia:normalizeEmergence']){
+  assert.ok(emergingEditor.includes(expected),'Falta parámetro de emergencia en editor: '+expected);
+}
+assert.ok(emergingPublisher.includes('efectoEmergencia:emergence'),'El publicador debe preservar la emergencia de cada cuadro');
+assert.ok(emergingViewer.includes("target.addEventListener('targetFound'"),'Conservar el motor de detección de imágenes');
+console.log('Efecto 2.5D cinematográfico y configuración por cuadro preservados desde editor hasta visor');

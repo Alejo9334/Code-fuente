@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "titulo": "Visor-222 · Catálogo AR de cuadros",
+  "titulo": "Visor-222 · Imágenes AR",
   "descripcion": "Catálogo estático validado para Visor-222 Preview",
   "cuadros": [
     {
@@ -101,12 +101,100 @@
           }
         }
       ]
+    },
+    {
+      "id": "cuadro-mwa975aj-6lp",
+      "nombre": "Carnet",
+      "targetIndex": 1,
+      "relacionAltoAncho": 1.25,
+      "imagenObjetivo": "./cuadros/cuadro-mwa975aj-6lp/referencia.jpg",
+      "capas": [
+        {
+          "id": "capa-mwa9758a-dxy",
+          "nombre": "1",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-01-capa-mwa9758a-dxy.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": 0.075,
+          "y": 0.095,
+          "z": 0.015,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0,
+            "duracionMs": 2500
+          }
+        },
+        {
+          "id": "capa-mwa97591-7g1",
+          "nombre": "2",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-02-capa-mwa97591-7g1.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": -0.16,
+          "y": 0,
+          "z": 0.035,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.015,
+            "duracionMs": 2500
+          }
+        },
+        {
+          "id": "capa-mwa9759t-w1s",
+          "nombre": "3",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-03-capa-mwa9759t-w1s.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": 0,
+          "y": -0.205,
+          "z": 0.055,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.015,
+            "duracionMs": 2500
+          }
+        },
+        {
+          "id": "capa-mwa975ai-1tfv",
+          "nombre": "4",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-04-capa-mwa975ai-1tfv.optimized.webp",
+          "ancho": 1.08,
+          "alto": 1.35,
+          "x": 0.2,
+          "y": 0.18,
+          "z": 0.1,
+          "rotation": 9,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.015,
+            "duracionMs": 2500
+          }
+        }
+      ],
+      "efectoEmergencia": {
+        "activo": true,
+        "duracionMs": 1000,
+        "escalaInicial": 0.85,
+        "intensidad": "cinematografica",
+        "destello": true
+      }
     }
   ],
   "archivoMind": "./targets.mind",
   "compilador": {
     "motor": "mind-ar",
     "version": "1.2.5",
-    "cantidadObjetivos": 1
+    "cantidadObjetivos": 2
   }
 }

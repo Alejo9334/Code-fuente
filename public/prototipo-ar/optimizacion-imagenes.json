@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "cuadros": 1,
-  "totalOriginal": 4075514,
-  "totalServido": 1154142,
+  "cuadros": 2,
+  "totalOriginal": 4524908,
+  "totalServido": 1276854,
   "imagenes": [
     {
       "original": "./capa-5.png.png",
@@ -58,7 +58,51 @@
       "bytesOptimizado": 56480,
       "ahorroPorcentaje": 70.4,
       "metodo": "calidad 93/100"
+    },
+    {
+      "original": "./cuadros/cuadro-mwa975aj-6lp/capa-01-capa-mwa9758a-dxy.png",
+      "usado": "./cuadros/cuadro-mwa975aj-6lp/capa-01-capa-mwa9758a-dxy.optimized.webp",
+      "ancho": 1024,
+      "alto": 1280,
+      "transparencia": true,
+      "bytesOriginal": 95442,
+      "bytesOptimizado": 24672,
+      "ahorroPorcentaje": 74.1,
+      "metodo": "sin pérdida"
+    },
+    {
+      "original": "./cuadros/cuadro-mwa975aj-6lp/capa-02-capa-mwa97591-7g1.png",
+      "usado": "./cuadros/cuadro-mwa975aj-6lp/capa-02-capa-mwa97591-7g1.optimized.webp",
+      "ancho": 1024,
+      "alto": 1280,
+      "transparencia": true,
+      "bytesOriginal": 98210,
+      "bytesOptimizado": 25202,
+      "ahorroPorcentaje": 74.3,
+      "metodo": "sin pérdida"
+    },
+    {
+      "original": "./cuadros/cuadro-mwa975aj-6lp/capa-03-capa-mwa9759t-w1s.png",
+      "usado": "./cuadros/cuadro-mwa975aj-6lp/capa-03-capa-mwa9759t-w1s.optimized.webp",
+      "ancho": 1024,
+      "alto": 1280,
+      "transparencia": true,
+      "bytesOriginal": 94391,
+      "bytesOptimizado": 24484,
+      "ahorroPorcentaje": 74.1,
+      "metodo": "sin pérdida"
+    },
+    {
+      "original": "./cuadros/cuadro-mwa975aj-6lp/capa-04-capa-mwa975ai-1tfv.png",
+      "usado": "./cuadros/cuadro-mwa975aj-6lp/capa-04-capa-mwa975ai-1tfv.optimized.webp",
+      "ancho": 1024,
+      "alto": 1280,
+      "transparencia": true,
+      "bytesOriginal": 161351,
+      "bytesOptimizado": 48354,
+      "ahorroPorcentaje": 70,
+      "metodo": "calidad 93/100"
     }
   ],
-  "ahorroPorcentaje": 71.7
+  "ahorroPorcentaje": 71.8
 }

@@ -59,14 +59,19 @@ jobs:
 
       - name: Validar carga incremental sin publicación real
         run: |
+          cp public/prototipo-ar/catalogo.json tmp/catalogo-antes-prueba.json
           node scripts/preparar-publicacion-ar.mjs proyectos/ejemplo-agregar-cuadro.json --apply --append
           node --input-type=module -e "
           import fs from 'node:fs';
+          const before=JSON.parse(fs.readFileSync('tmp/catalogo-antes-prueba.json','utf8'));
           const data=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
-          if(data.cuadros.length!==2)throw Error('La incorporación debe conservar el cuadro existente');
-          if(data.cuadros[0].id!=='cuadro-creeper-001')throw Error('El cuadro original fue reemplazado');
-          if(data.cuadros[1].id!=='prueba-agregado-automatico'||data.cuadros[1].targetIndex!==1)throw Error('Nuevo cuadro sin índice correcto');
-          const art=data.cuadros[1];
+          if(data.cuadros.length!==before.cuadros.length+1)throw Error('La incorporación debe conservar todos los cuadros existentes y añadir uno');
+          before.cuadros.forEach((art,index)=>{
+            if(data.cuadros[index].id!==art.id||data.cuadros[index].targetIndex!==index)throw Error('Se alteró un cuadro ya registrado');
+          });
+          const newArt=data.cuadros[before.cuadros.length];
+          if(newArt.id!=='prueba-agregado-automatico'||newArt.targetIndex!==before.cuadros.length)throw Error('Nuevo cuadro sin índice correcto');
+          const art=newArt;
           if(!fs.existsSync('public/prototipo-ar/'+art.imagenObjetivo.replace(/^\\.\\//,'')))throw Error('Falta referencia del nuevo cuadro');
           for(const layer of art.capas)if(!fs.existsSync('public/prototipo-ar/'+layer.imagen.replace(/^\\.\\//,'')))throw Error('Falta capa del nuevo cuadro');
           console.log('Proyecto incremental generado correctamente; sin publicación a clientes.');

@@ -102,8 +102,8 @@ const output={
     const e=art.efectoEmergencia||{};
     const emergence={
       activo:e.activo!==false,
-      duracionMs:Math.max(500,Math.min(3000,Number(e.duracionMs)||1400)),
-      escalaInicial:Math.max(.4,Math.min(1,Number(e.escalaInicial)||.7)),
+      duracionMs:Math.max(500,Math.min(3000,Number(e.duracionMs)||1600)),
+      escalaInicial:Math.max(.4,Math.min(1,Number(e.escalaInicial)||.62)),
       intensidad:['suave','media','cinematografica'].includes(e.intensidad)?e.intensidad:'cinematografica',
       destello:e.destello!==false
     };

@@ -585,7 +585,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       }
       var payload={version:2,titulo:'Visor-222 · Imágenes AR',cuadros:[{
         id:id,nombre:art.nombre||id,targetIndex:0,relacionAltoAncho:ratio,imagenObjetivo:image,
-        espaciadoCapas:Number(art.espaciadoCapas||.02),capas:layers,
+        espaciadoCapas:Math.max(0,Math.min(.08,safeNumber(art.espaciadoCapas,.02))),capas:layers,
         efectoEmergencia:normalizeEmergence(art.efectoEmergencia)
       }]};
       var serialized=JSON.stringify(payload);

@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 for (const filename of ['public/prototipo-ar/index.html', 'public/prototipo-ar/crear-cuadro.html', 'public/prototipo-ar/editor.html', 'public/prototipo-ar/login.html', 'public/prototipo-ar/optimizar.html', 'public/prototipo-ar/preparar-imagen.html']) {
   const html = fs.readFileSync(filename, 'utf8');
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
-  assert.ok(scripts.length > 0, filename + ' must include a script');
+  if(filename.endsWith('/login.html'))assert.ok(html.includes('url=./editor.html'),'La antigua página de acceso debe redirigir al editor local');
+  else assert.ok(scripts.length > 0, filename + ' must include a script');
   for (const [, source] of scripts) {
     if (source.trim()) new vm.Script(source, { filename });
   }

@@ -122,8 +122,18 @@ dialog h2{font-size:21px;margin:0 0 8px}
 </aside>
 <main class="center">
 <section class="panel">
-<div class="preview-toolbar"><div><h1>Composición del cuadro</h1><span class="muted">Vista previa aproximada en 2D; prueba la profundidad real en cámara.</span></div><span class="flag" id="counter">5 capas</span></div>
-<div class="canvas-wrap"><div id="artboard" class="artboard"><img id="physical" class="physical" alt="Imagen física de referencia"></div></div>
+<div class="preview-toolbar"><div><h1>Composición del cuadro · Lienzo 3D</h1><span class="muted">Inspecciona los PNG como planos separados en profundidad.</span></div><span class="flag" id="counter">5 capas</span></div>
+<div class="view-toolbar" role="group" aria-label="Perspectiva del lienzo">
+  <button type="button" class="view-button active" data-view="perspectiva">Perspectiva</button>
+  <button type="button" class="view-button" data-view="frontal">Frontal</button>
+  <button type="button" class="view-button" data-view="lateral">Lateral</button>
+  <button type="button" class="view-button" data-view="superior">Superior</button>
+</div>
+<div class="canvas-wrap"><div id="artboard" class="artboard" data-view="perspectiva"><img id="physical" class="physical" alt="Imagen física de referencia"></div></div>
+<div class="spacing-toolbar">
+  <div class="field spacing-field"><label for="layerSpacing">Separación global entre PNG <output id="layerSpacingVal">0.010</output></label><input id="layerSpacing" type="range" min="0" max="0.025" step="0.001" value="0.010"></div>
+  <button id="resetSpacing" class="subtle" type="button">Restablecer separación</button>
+</div>
 <div class="controls" style="margin-top:14px">
 <label class="switch"><input id="showBase" type="checkbox" checked> Mostrar cuadro impreso</label>
 <label class="switch"><input id="showOutline" type="checkbox"> Resaltar capa activa</label>
@@ -139,6 +149,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="field"><label for="posX">Posición horizontal X <output id="posXVal"></output></label><input id="posX" type="range" min="-0.5" max="0.5" step="0.005"></div>
 <div class="field"><label for="posY">Posición vertical Y <output id="posYVal"></output></label><input id="posY" type="range" min="-0.5" max="0.5" step="0.005"></div>
 <div class="field"><label for="depth">Profundidad Z <output id="depthVal"></output></label><input id="depth" type="range" min="0" max="0.3" step="0.005"></div>
+<div class="field"><label for="layerSpacingExtra">Separación extra de esta capa <output id="layerSpacingExtraVal"></output></label><input id="layerSpacingExtra" type="range" min="-0.03" max="0.03" step="0.001"></div>
 <div class="field"><label for="scale">Escala <output id="scaleVal"></output></label><input id="scale" type="range" min="0.25" max="2" step="0.01"></div>
 <div class="field"><label for="rotation">Rotación <output id="rotationVal"></output></label><input id="rotation" type="range" min="-180" max="180" step="1"></div>
 <div class="field"><label for="opacity">Opacidad <output id="opacityVal"></output></label><input id="opacity" type="range" min="0" max="1" step="0.01"></div>
@@ -196,7 +207,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
   var creationMode='new';
   var shareURL='';
   var aspect=2047/1638;
-  var controlIds=['name','posX','posY','depth','scale','rotation','opacity','animationType','amplitude','duration','visible'];
+  var editorView='perspectiva';
+  var controlIds=['name','posX','posY','depth','layerSpacingExtra','scale','rotation','opacity','animationType','amplitude','duration','visible'];
   function note(msg){$('status').textContent=msg;}
   function safeNumber(n, fallback){var v=Number(n);return Number.isFinite(v)?v:fallback;}
   function article(){return catalog&&catalog.cuadros.find(function(a){return a.id===selectedArtId;});}
@@ -257,6 +269,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       var ratio=safeNumber(art.relacionAltoAncho,2047/1638);
       if(ratio<=0||ratio>5)throw Error('Proporciones no válidas en el cuadro '+art.id);
       art.relacionAltoAncho=ratio;
+      art.espaciadoCapas=Math.max(0,Math.min(.025,safeNumber(art.espaciadoCapas,.01)));
       art.targetIndex=i;
       art.efectoEmergencia=normalizeEmergence(art.efectoEmergencia);
       var ids=new Set();
@@ -266,6 +279,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
         l.ancho=safeNumber(l.ancho,1);l.alto=safeNumber(l.alto,ratio);
         l.baseAncho=safeNumber(l.baseAncho,l.ancho);l.baseAlto=safeNumber(l.baseAlto,l.alto);
         l.x=safeNumber(l.x,0);l.y=safeNumber(l.y,0);l.z=safeNumber(l.z,0);
+        l.separacionZ=Math.max(-.03,Math.min(.03,safeNumber(l.separacionZ,0)));
         l.rotation=safeNumber(l.rotation,0);
         l.opacidad=safeNumber(l.opacidad,1);
         l.visible=l.visible!==false;
@@ -302,7 +316,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       var img=document.createElement('img');img.className='thumb';img.src=asset(l.imagen);img.alt='';
       var name=document.createElement('span');name.style.flex='1';
       var first=document.createElement('span');first.className='layername';first.textContent=l.nombre;
-      var second=document.createElement('span');second.className='layerdepth';second.textContent='Capa '+(i+1)+' · Z '+safeNumber(l.z,0).toFixed(3);
+      var second=document.createElement('span');second.className='layerdepth';second.textContent='Capa '+(i+1)+' · Z '+safeNumber(l.z,0).toFixed(3)+' · Δ '+safeNumber(l.separacionZ,0).toFixed(3);
       name.append(first,second);
       var eye=document.createElement('span');eye.className='eye';eye.textContent=l.visible===false?'Oculta':'●';
       b.append(img,name,eye);b.addEventListener('click',function(){selectedId=l.id;render();});
@@ -313,17 +327,21 @@ dialog h2{font-size:21px;margin:0 0 8px}
   function drawBoard(){
     var b=$('artboard');b.querySelectorAll('.layerplane').forEach(function(n){n.remove();});
     var art=article();aspect=safeNumber(art.relacionAltoAncho,aspect);
+    var globalGap=Math.max(0,Math.min(.025,safeNumber(art.espaciadoCapas,.01)));
+    $('layerSpacing').value=globalGap;
+    $('layerSpacingVal').textContent=globalGap.toFixed(3);
+    b.dataset.view=editorView;
     b.style.aspectRatio='1 / '+aspect;
     $('physical').src=asset(art.imagenObjetivo);$('physical').style.visibility=$('showBase').checked?'visible':'hidden';
     article().capas.forEach(function(l,index){
       if(l.visible===false)return;
       var box=document.createElement('div');box.className='layerplane'+(($('showOutline').checked&&selectedId===l.id)?' focus':'');
       var w=safeNumber(l.ancho,1),h=safeNumber(l.alto,aspect);
+      var effectiveZ=safeNumber(l.z,0)+index*globalGap+safeNumber(l.separacionZ,0);
       box.style.width=w*100+'%';box.style.height=(h/aspect)*100+'%';
       box.style.left=(50+safeNumber(l.x,0)*100)+'%';
       box.style.top=(50-safeNumber(l.y,0)/aspect*100)+'%';
-      box.style.zIndex=String(index+1);
-      box.style.transform='translate(-50%,-50%) translateZ('+safeNumber(l.z,0)*200+'px) rotate('+safeNumber(l.rotation,0)+'deg)';
+      box.style.transform='translate(-50%,-50%) translateZ('+effectiveZ*260+'px) rotate('+safeNumber(l.rotation,0)+'deg)';
       var pic=document.createElement('img');pic.src=asset(l.imagen);pic.alt='';
       pic.style.opacity=String(safeNumber(l.opacidad,1));
       if($('animatePreview').checked&&l.animacion){
@@ -339,6 +357,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     var l=selected();if(!l)return;
     $('activeTag').textContent=l.id;$('name').value=l.nombre;
     $('posX').value=l.x;$('posY').value=l.y;$('depth').value=l.z;
+    $('layerSpacingExtra').value=safeNumber(l.separacionZ,0);
     $('scale').value=safeNumber(l.ancho,1)/safeNumber(l.baseAncho,1);
     $('rotation').value=l.rotation||0;$('opacity').value=l.opacidad;
     $('animationType').value=l.animacion.tipo||'ninguna';
@@ -362,7 +381,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
       rotation:$('rotation').value+'°',
       opacity:Math.round(Number($('opacity').value)*100)+'%',
       amplitude:$('animationType').value==='girar'?$('amplitude').value+'°':Number($('amplitude').value).toFixed(3),
-      duration:(Number($('duration').value)/1000).toFixed(1)+' s'
+      duration:(Number($('duration').value)/1000).toFixed(1)+' s',
+      layerSpacingExtra:Number($('layerSpacingExtra').value).toFixed(3)
     };
     Object.keys(values).forEach(function(id){$(id+'Val').textContent=values[id];});
   }
@@ -379,7 +399,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     var l=selected();if(!l)return;
     configureAmplitude();
     l.nombre=$('name').value||l.id;l.x=Number($('posX').value);l.y=Number($('posY').value);
-    l.z=Number($('depth').value);l.rotation=Number($('rotation').value);
+    l.z=Number($('depth').value);l.separacionZ=Number($('layerSpacingExtra').value);l.rotation=Number($('rotation').value);
     var scale=Number($('scale').value);
     l.ancho=safeNumber(l.baseAncho,1)*scale;l.alto=safeNumber(l.baseAlto,aspect)*scale;
     l.opacidad=Number($('opacity').value);l.visible=$('visible').checked;
@@ -388,6 +408,32 @@ dialog h2{font-size:21px;margin:0 0 8px}
   }
   controlIds.forEach(function(id){$(id).addEventListener('input',controlChanged);$(id).addEventListener('change',controlChanged);});
   ['showBase','showOutline','animatePreview'].forEach(function(id){$(id).addEventListener('change',drawBoard);});
+  function setEditorView(mode){
+    editorView=['perspectiva','frontal','lateral','superior'].includes(mode)?mode:'perspectiva';
+    $('artboard').dataset.view=editorView;
+    document.querySelectorAll('.view-button').forEach(function(button){
+      var active=button.dataset.view===editorView;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+  }
+  document.querySelectorAll('.view-button').forEach(function(button){
+    button.addEventListener('click',function(){setEditorView(button.dataset.view);});
+  });
+  $('layerSpacing').addEventListener('input',function(){
+    if(!article())return;
+    article().espaciadoCapas=Number(this.value);
+    $('layerSpacingVal').textContent=Number(this.value).toFixed(3);
+    drawBoard();
+  });
+  $('layerSpacing').addEventListener('change',function(){persist();});
+  $('resetSpacing').addEventListener('click',function(){
+    if(!article())return;
+    article().espaciadoCapas=.01;
+    $('layerSpacing').value='.01';
+    drawBoard();persist();
+    note('Separación global restablecida a 0.010.');
+  });
   $('artTitle').addEventListener('change',function(){
     if(!article())return;
     article().nombre=this.value.trim()||article().id;render();note('Nombre del cuadro actualizado en el borrador.');

@@ -591,8 +591,8 @@
         var amplitude=Math.abs(Number(anim.amplitud)||0);
         var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
         wrapper.depthFactor=depth;
-        var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined?.5:layer.pivotX)));
-        var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined?.5:layer.pivotY)));
+        var pivotX=Math.max(0,Math.min(1,Number(layer.pivotX===undefined ? 0.5 : layer.pivotX)));
+        var pivotY=Math.max(0,Math.min(1,Number(layer.pivotY===undefined ? 0.5 : layer.pivotY)));
         var pivotOffsetX=(pivotX-.5)*Number(layer.ancho||1);
         var pivotOffsetY=(.5-pivotY)*Number(layer.alto||1);
         wrapper.basePosition={x:(Number(layer.x)||0)+pivotOffsetX,y:(Number(layer.y)||0)+pivotOffsetY,z:-.055+physicalDepth*.28};

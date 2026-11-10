@@ -92,6 +92,7 @@ const output={
         id:layerId,nombre:String(l.nombre||layerId).slice(0,100),imagen:image,
         ancho:Number(l.ancho),alto:Number(l.alto),x:Number(l.x),y:Number(l.y),z:Number(l.z),
         rotation:Number(l.rotation||0),opacidad:Number(l.opacidad),
+        separacionZ:Math.max(-.03,Math.min(.03,Number.isFinite(Number(l.separacionZ))?Number(l.separacionZ):0)),
         visible:l.visible!==false,
         animacion:{
           tipo:type,amplitud:Number.isFinite(Number(a.amplitud))?Number(a.amplitud):0,
@@ -108,7 +109,9 @@ const output={
       destello:e.destello!==false
     };
     return {id,nombre:String(art.nombre||id).slice(0,100),targetIndex:index,
-      relacionAltoAncho:ratio,imagenObjetivo:target,capas:layers,efectoEmergencia:emergence};
+      relacionAltoAncho:ratio,imagenObjetivo:target,
+      espaciadoCapas:Math.max(0,Math.min(.025,Number.isFinite(Number(art.espaciadoCapas))?Number(art.espaciadoCapas):.01)),
+      capas:layers,efectoEmergencia:emergence};
   })
 };
 if(append){

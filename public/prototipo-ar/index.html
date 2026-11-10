@@ -345,42 +345,78 @@
       var intensity=['suave','media','cinematografica'].includes(p.intensidad)?p.intensidad:'cinematografica';
       return {
         enabled:p.activo!==false,
-        duration:Math.max(500,Math.min(3000,Number(p.duracionMs)||1400)),
-        initialScale:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.7)),
+        duration:Math.max(500,Math.min(3000,Number(p.duracionMs)||1600)),
+        initialScale:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.62)),
         intensity:intensity,
         flash:p.destello!==false
       };
     }
+    function stopLayerMotion(group){
+      if(group.motionFrame){cancelAnimationFrame(group.motionFrame);group.motionFrame=0;}
+    }
     function resetReveal(group){
       group.sequence++;
       if(group.frame){cancelAnimationFrame(group.frame);group.frame=0;}
+      stopLayerMotion(group);
       group.wrappers.forEach(function(wrapper){
+        var base=wrapper.basePosition||{x:0,y:0,z:-.055};
         wrapper.object3D.visible=false;
         wrapper.object3D.scale.setScalar(1);
-        wrapper.object3D.position.z=0;
+        wrapper.object3D.position.set(base.x,base.y,base.z);
+        wrapper.object3D.rotation.z=wrapper.baseRotation||0;
         var mesh=wrapper.layerPlane.getObject3D('mesh');
         if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
       });
+    }
+    function startLayerMotion(group,version){
+      if(motionReduced||!tracked.has(group.art.id))return;
+      var startTime=null;
+      function frame(now){
+        if(version!==group.sequence||!tracked.has(group.art.id)){group.motionFrame=0;return;}
+        if(startTime===null)startTime=now;
+        var elapsed=(now-startTime)/1000;
+        group.wrappers.forEach(function(wrapper){
+          var spec=wrapper.motionSpec||{};
+          var base=wrapper.basePosition||{x:0,y:0,z:-.055};
+          if(!spec.type||spec.type==='ninguna')return;
+          var phase=(elapsed/spec.period)*Math.PI*2+spec.phase;
+          var wave=Math.sin(phase);
+          if(spec.type==='flotar'){
+            wrapper.object3D.position.x=base.x+Math.cos(phase*.72)*spec.x;
+            wrapper.object3D.position.y=base.y+wave*spec.y;
+            wrapper.object3D.position.z=base.z+Math.sin(phase*.61)*spec.z;
+          }else if(spec.type==='pulso'){
+            wrapper.object3D.scale.setScalar(1+wave*spec.scale);
+            wrapper.object3D.position.z=base.z+wave*spec.z;
+          }else if(spec.type==='girar'){
+            wrapper.object3D.rotation.z=(wrapper.baseRotation||0)+wave*spec.rotation;
+            wrapper.object3D.position.y=base.y+wave*spec.y;
+          }
+        });
+        group.motionFrame=requestAnimationFrame(frame);
+      }
+      group.motionFrame=requestAnimationFrame(frame);
     }
     function revealArtwork(group) {
       resetReveal(group);
       var settings=emergenceSettings(group.art);
       var version=group.sequence;
-      // Evitar movimiento con las preferencias de accesibilidad activadas.
       if(motionReduced||!settings.enabled){
         group.wrappers.forEach(function(wrapper){
+          var base=wrapper.basePosition||{x:0,y:0,z:-.055};
           wrapper.object3D.visible=true;
           wrapper.object3D.scale.setScalar(1);
-          wrapper.object3D.position.z=0;
+          wrapper.object3D.position.set(base.x,base.y,base.z);
           var mesh=wrapper.layerPlane.getObject3D('mesh');
           if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha;
         });
+        if(settings.enabled)startLayerMotion(group,version);
         return;
       }
       var startTime=null;
-      var delayBetween=Math.min(110,settings.duration*.075);
-      var perLayerDuration=Math.max(380,settings.duration-delayBetween*(group.wrappers.length-1));
-      var distance={suave:.045,media:.10,cinematografica:.18}[settings.intensity];
+      var delayBetween=Math.min(135,settings.duration*.09);
+      var perLayerDuration=Math.max(500,settings.duration-delayBetween*(group.wrappers.length-1));
+      var distance={suave:.085,media:.17,cinematografica:.28}[settings.intensity];
       function frame(now){
         if(version!==group.sequence||!tracked.has(group.art.id))return;
         if(startTime===null)startTime=now;
@@ -390,18 +426,33 @@
           if(elapsed<0){wrapper.object3D.visible=false;complete=false;return;}
           var t=Math.min(1,elapsed/perLayerDuration);
           if(t<1)complete=false;
-          // Salida rápida con aterrizaje suave; escalonado fondo -> frente.
-          var ease=1-Math.pow(1-t,3);
+          // Ease-out con un pequeño rebote para dar sensación de salida física.
+          var c1=1.18,c3=c1+1;
+          var ease=1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);
+          var base=wrapper.basePosition||{x:0,y:0,z:-.055};
+          var depth=wrapper.depthFactor||0;
+          var travel=distance*(.72+depth*.72);
+          var startScale=Math.max(.42,settings.initialScale-depth*.07);
           wrapper.object3D.visible=true;
-          wrapper.object3D.scale.setScalar(settings.initialScale+(1-settings.initialScale)*ease);
-          // El plano inicia detrás de la imagen y termina en el Z configurado
-          // en el editor; nunca se modifica la posición permanente del PNG.
-          wrapper.object3D.position.z=-distance*(1-ease);
+          wrapper.object3D.scale.setScalar(startScale+(1-startScale)*ease);
+          wrapper.object3D.position.set(
+            base.x+(1-ease)*(depth-.5)*.018,
+            base.y+(1-ease)*(.008+depth*.012),
+            base.z-travel*(1-ease)
+          );
           var mesh=wrapper.layerPlane.getObject3D('mesh');
-          if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha*ease;
+          if(mesh&&mesh.material)mesh.material.opacity=wrapper.finalAlpha*Math.max(0,Math.min(1,ease));
         });
         if(!complete)group.frame=requestAnimationFrame(frame);
-        else group.frame=0;
+        else{
+          group.frame=0;
+          group.wrappers.forEach(function(wrapper){
+            var base=wrapper.basePosition||{x:0,y:0,z:-.055};
+            wrapper.object3D.position.set(base.x,base.y,base.z);
+            wrapper.object3D.scale.setScalar(1);
+          });
+          startLayerMotion(group,version);
+        }
       }
       group.frame=requestAnimationFrame(frame);
     }
@@ -460,13 +511,38 @@
         var wrapper=element('a-entity');
         wrapper.finalAlpha=Number(layer.opacidad===undefined?1:layer.opacidad);
         wrapper.setAttribute('visible','false');
-        wrapper.setAttribute('scale','0.82 0.82 0.82');
+        wrapper.setAttribute('scale','1 1 1');
         wrapper.setAttribute('position','0 0 -0.055');
+        wrapper.layer=layer;
+        wrapper.layerIndex=layerIndex;
         wrapper.layerPlane=plane;
         wrapper.appendChild(plane);
         target.appendChild(wrapper);
         group.wrappers.push(wrapper);
         group.textures.push({plane:plane,layer:layer,order:layerIndex+1});
+      });
+      var depthValues=group.wrappers.map(function(wrapper){return Number(wrapper.layer.z)||0;});
+      var minDepth=depthValues.length?Math.min.apply(null,depthValues):0;
+      var maxDepth=depthValues.length?Math.max.apply(null,depthValues):0;
+      group.wrappers.forEach(function(wrapper,i){
+        var layer=wrapper.layer,anim=layer.animacion||{};
+        var depth=maxDepth-minDepth>.001?(Number(layer.z||0)-minDepth)/(maxDepth-minDepth):i/Math.max(1,group.wrappers.length-1);
+        depth=Math.max(0,Math.min(1,depth));
+        var type=['flotar','pulso','girar'].includes(anim.tipo)?anim.tipo:'ninguna';
+        var amplitude=Math.abs(Number(anim.amplitud)||0);
+        var period=Math.max(700,Math.min(12000,Number(anim.duracionMs)||2400));
+        wrapper.depthFactor=depth;
+        wrapper.basePosition={x:0,y:0,z:-.055+depth*.065};
+        wrapper.baseRotation=0;
+        wrapper.motionSpec={
+          type:type,period:period,phase:i*1.137,
+          x:.0015+depth*.002,
+          y:.0025+Math.min(.004,amplitude*.2),
+          z:.001+depth*.0025,
+          scale:.008+Math.min(.025,amplitude*.18),
+          rotation:Math.min(.045,(amplitude||8)*Math.PI/180*.2)
+        };
+        wrapper.object3D.position.set(0,0,wrapper.basePosition.z);
       });
       scene.appendChild(target);
     });
@@ -518,6 +594,7 @@
       group.sequence++;
       if(group.frame)cancelAnimationFrame(group.frame);
       group.frame=0;
+      stopLayerMotion(group);
       group.wrappers.forEach(function(wrapper){wrapper.object3D.visible=false;});
     });
     clearTimeout(pulseTimer);

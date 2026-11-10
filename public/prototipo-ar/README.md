@@ -202,3 +202,17 @@ Los botones de guardar/cargar proyectos en **nube privada** se retiraron del edi
 **No confundir un enlace no divulgado con acceso privado:** los editores se alojan en GitHub Pages y cualquier persona que conozca su URL puede abrirlos y preparar sus propios borradores en su dispositivo. No pueden modificar el catálogo publicado sin credenciales autorizadas de GitHub. No subir contenido privado a GitHub Pages ni al repositorio público.
 
 La rama principal de Visor-222 permanece sin cambios.
+
+## Panel unificado de creación, edición y publicación (Preview)
+
+Ahora `editor.html` contiene todas las funciones que antes estaban repartidas entre `editor.html` y `preparar-imagen.html`:
+
+- **Crear** cuadros AR con imagen de referencia y varias capas PNG.
+- **Ajustar** tamaño, posición, orden, opacidad, profundidad y animaciones de cada capa.
+- **Agregar** varias capas PNG en una sola selección.
+- **Guardar** borradores locales o exportar el catálogo como JSON de respaldo.
+- **Preparar publicación en GitHub** del cuadro seleccionado: comprueba que su ID todavía no esté publicado, obtiene sus imágenes, restaura PNG transparente a partir de capas WebP cuando es necesario, valida parámetros y genera un JSON con la imagen y las capas incrustadas para subir a `proyectos/pendientes/` del repositorio de desarrollo.
+
+La publicación final sigue requiriendo confirmar manualmente el commit desde una cuenta de GitHub con permisos de escritura. El flujo de GitHub organiza los archivos, optimiza imágenes y recompila el reconocimiento. No se usan credenciales de publicación en el navegador. La ruta antigua `preparar-imagen.html` redirige al nuevo editor. El cliente recibe **exclusivamente** `index.html`.
+
+**Precaución:** esta publicación automatizada es de **alta de nuevos cuadros**. Si un cuadro ya existe en `catalogo.json`, el editor bloquea el intento de agregarlo de nuevo, evitando sobreescritura involuntaria. Las actualizaciones de cuadros existentes necesitan un flujo de edición/publicación dedicado más adelante. Todos los editores en GitHub Pages son accesibles a quien conozca la URL; no son privados.

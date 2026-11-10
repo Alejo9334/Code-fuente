@@ -1,0 +1,54 @@
+name: Actualizar experiencia AR existente
+
+on:
+  push:
+    branches:
+      - desarrollo/multicuadros-ar-v2
+    paths:
+      - 'proyectos/actualizaciones/*.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-experiencias-code-fuente
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obtener código del proyecto
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - name: Identificar solicitud de actualización
+        id: solicitud
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -E '^proyectos/actualizaciones/[a-zA-Z0-9._-]+\.json$' | head -1 || true)
+          if [[ -z "$FILE" ]] || [[ ! -f "$FILE" ]]; then
+            echo "No se encontró una solicitud nueva válida en proyectos/actualizaciones/" >&2
+            exit 1
+          fi
+          echo "archivo=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Validar y actualizar solo el cuadro seleccionado
+        env:
+          ARCHIVO: ${{ steps.solicitud.outputs.archivo }}
+        run: |
+          node --check scripts/actualizar-cuadro.mjs
+          node scripts/actualizar-cuadro.mjs "$ARCHIVO" "public/prototipo-ar"
+
+      - name: Guardar versión con historial de Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- public/prototipo-ar
+          git commit -m "Actualizar experiencia AR publicada con respaldo en historial"
+          git push origin HEAD:desarrollo/multicuadros-ar-v2
+

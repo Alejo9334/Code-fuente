@@ -61,6 +61,10 @@ const context=vm.createContext({
   safeNumber:(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback,
   Set,Error
 });
+const emergeStart=multiEditor.indexOf('  function normalizeEmergence(value){');
+const emergeEnd=multiEditor.indexOf('  function populateEmergence(){',emergeStart);
+assert.ok(emergeStart>=0&&emergeEnd>emergeStart,'No se encontró normalizador de emergencia');
+vm.runInContext(multiEditor.slice(emergeStart,emergeEnd),context,{filename:'normalize-emergencia'});
 vm.runInContext(multiEditor.slice(from,to),context,{filename:'normalize-multicuadros'});
 const base=JSON.parse(JSON.stringify(rawCatalog.cuadros[0]));
 const second={

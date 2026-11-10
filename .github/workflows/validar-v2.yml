@@ -39,7 +39,7 @@ jobs:
       - name: Compilar Vite
         run: npm run build
       - name: Comprobar visor generado
-        run: test -f dist/prototipo-ar/optimizar.html && test -f dist/prototipo-ar/optimizacion-imagenes.json && test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json && test -f dist/prototipo-ar/crear-cuadro.html && test -f dist/prototipo-ar/editor.html && test -f dist/prototipo-ar/login.html && test -f dist/prototipo-ar/admin-auth.js && test -f dist/prototipo-ar/auth-config.js
+        run: test -f dist/prototipo-ar/preparar-imagen.html && test -f dist/prototipo-ar/optimizar.html && test -f dist/prototipo-ar/optimizacion-imagenes.json && test -f dist/prototipo-ar/index.html && test -f dist/prototipo-ar/catalogo.json && test -f dist/prototipo-ar/crear-cuadro.html && test -f dist/prototipo-ar/editor.html && test -f dist/prototipo-ar/login.html && test -f dist/prototipo-ar/admin-auth.js && test -f dist/prototipo-ar/auth-config.js
       - name: Validar scripts de prueba
         run: node scripts/verificar-prototipo-ar.mjs
       - name: Preparar publicación de muestra sin alterar catálogo
@@ -55,3 +55,16 @@ jobs:
           if(original.cuadros.length!==preview.cuadros.length) throw Error('Publicador descartó cuadros');
           "
 
+      - name: Validar carga incremental sin publicación real
+        run: |
+          node scripts/preparar-publicacion-ar.mjs proyectos/ejemplo-agregar-cuadro.json --apply --append
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          const data=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
+          if(data.cuadros.length!==2)throw Error('La incorporación debe conservar el cuadro existente');
+          if(data.cuadros[0].id!=='cuadro-creeper-001')throw Error('El cuadro original fue reemplazado');
+          if(data.cuadros[1].id!=='prueba-agregado-automatico'||data.cuadros[1].targetIndex!==1)throw Error('Nuevo cuadro sin índice correcto');
+          if(!fs.existsSync('public/prototipo-ar/cuadros/prueba-agregado-automatico/referencia.png'))throw Error('Falta referencia preparada');
+          if(!fs.existsSync('public/prototipo-ar/cuadros/prueba-agregado-automatico/capa-01-capa-prueba.png'))throw Error('Falta capa preparada');
+          console.log('Proyecto incremental generado correctamente; sin publicación a clientes.');
+          "

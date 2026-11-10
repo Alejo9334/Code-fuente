@@ -7,12 +7,12 @@
       "nombre": "Prueba adicional de CI",
       "targetIndex": 0,
       "relacionAltoAncho": 1.2496947,
-      "imagenObjetivo": "./cuadro-original.png.png",
+      "imagenObjetivo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+nmF0AAAAASUVORK5CYII=",
       "capas": [
         {
           "id": "capa-prueba",
           "nombre": "Capa de prueba",
-          "imagen": "./capa-1.png.png",
+          "imagen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+nmF0AAAAASUVORK5CYII=",
           "ancho": 1,
           "alto": 1.2496947,
           "x": 0,

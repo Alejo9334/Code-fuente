@@ -171,7 +171,8 @@ assert.ok(emergingPublisher.includes('espaciadoCapas:'),'El publicador debe cons
 assert.ok(emergingPublisher.includes('separacionZ:'),'El publicador debe conservar la separación individual');
 assert.ok(emergingViewer.includes('var globalGap='),'El visor debe aplicar separación global');
 assert.ok(emergingViewer.includes('physicalDepth*.28'),'El visor debe convertir la separación guardada en profundidad AR');
-for(const expected of ['id="scaleX"','id="scaleY"','id="animationType"','value="desplazar"','value="balancear"','@keyframes slideX','@keyframes rock3d','max="0.08"','max="3"','max="15000"','espaciadoCapas=Math.max(0,Math.min(.08','escalaX','escalaY','packetVersion===2']){
+assert.ok(emergingViewer.includes('packetVersion===2'),'El visor debe aceptar el formato QR actualizado');
+for(const expected of ['id="scaleX"','id="scaleY"','id="animationType"','value="desplazar"','value="balancear"','@keyframes slideX','@keyframes rock3d','max="0.08"','max="3"','max="15000"','espaciadoCapas=Math.max(0,Math.min(.08','escalaX','escalaY']){
   assert.ok(emergingEditor.includes(expected),'Falta control ampliado o animación independiente: '+expected);
 }
 for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type<0 || type>5"]){

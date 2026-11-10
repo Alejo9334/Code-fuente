@@ -64,7 +64,8 @@ jobs:
           if(data.cuadros.length!==2)throw Error('La incorporación debe conservar el cuadro existente');
           if(data.cuadros[0].id!=='cuadro-creeper-001')throw Error('El cuadro original fue reemplazado');
           if(data.cuadros[1].id!=='prueba-agregado-automatico'||data.cuadros[1].targetIndex!==1)throw Error('Nuevo cuadro sin índice correcto');
-          if(!fs.existsSync('public/prototipo-ar/cuadros/prueba-agregado-automatico/referencia.png'))throw Error('Falta referencia preparada');
-          if(!fs.existsSync('public/prototipo-ar/cuadros/prueba-agregado-automatico/capa-01-capa-prueba.png'))throw Error('Falta capa preparada');
+          const art=data.cuadros[1];
+          if(!fs.existsSync('public/prototipo-ar/'+art.imagenObjetivo.replace(/^\\.\\//,'')))throw Error('Falta referencia del nuevo cuadro');
+          for(const layer of art.capas)if(!fs.existsSync('public/prototipo-ar/'+layer.imagen.replace(/^\\.\\//,'')))throw Error('Falta capa del nuevo cuadro');
           console.log('Proyecto incremental generado correctamente; sin publicación a clientes.');
           "

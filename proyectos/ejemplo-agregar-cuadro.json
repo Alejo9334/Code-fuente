@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "titulo": "Prueba de incorporación automática",
+  "cuadros": [
+    {
+      "id": "prueba-agregado-automatico",
+      "nombre": "Prueba adicional de CI",
+      "targetIndex": 0,
+      "relacionAltoAncho": 1.2496947,
+      "imagenObjetivo": "./cuadro-original.png.png",
+      "capas": [
+        {
+          "id": "capa-prueba",
+          "nombre": "Capa de prueba",
+          "imagen": "./capa-1.png.png",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.03,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "ninguna",
+            "amplitud": 0,
+            "duracionMs": 2000
+          }
+        }
+      ]
+    }
+  ]
+}

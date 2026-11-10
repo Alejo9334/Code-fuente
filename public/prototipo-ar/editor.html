@@ -104,6 +104,13 @@ dialog h2{font-size:21px;margin:0 0 8px}
 <div class="group-label">Añadir archivos</div>
 <div class="field"><label for="addPng">Agregar capas PNG (selección múltiple)</label><input id="addPng" type="file" accept="image/png" multiple></div>
 <div class="field" style="margin-top:12px"><label for="changeTarget">Cambiar imagen impresa</label><input id="changeTarget" type="file" accept="image/png,image/jpeg,image/webp"></div>
+<div class="group-label">Efecto de aparición · Cuadro seleccionado</div>
+<div class="field"><label class="switch" for="emergenceEnabled"><input id="emergenceEnabled" type="checkbox" checked> Emergencia cinematográfica 2.5D</label></div>
+<div class="field"><label for="emergenceDuration">Duración <output id="emergenceDurationVal">1.4 s</output></label><input id="emergenceDuration" type="range" min="500" max="3000" step="100" value="1400"></div>
+<div class="field"><label for="emergenceScale">Escala inicial <output id="emergenceScaleVal">70%</output></label><input id="emergenceScale" type="range" min="40" max="100" step="5" value="70"></div>
+<div class="field"><label for="emergenceIntensity">Profundidad de salida</label><select id="emergenceIntensity"><option value="suave">Sutil</option><option value="media">Media</option><option value="cinematografica" selected>Cinematográfica</option></select></div>
+<div class="field"><label class="switch" for="emergenceFlash"><input id="emergenceFlash" type="checkbox" checked> Destello de activación</label></div>
+<p class="muted">Las capas salen desde detrás de la imagen y terminan en la profundidad Z que ya configuraste. Las animaciones individuales se conservan.</p>
 <div class="group-label">Proyecto guardado</div>
 <div class="controls"><button class="subtle" id="save">Guardar borrador local</button><button class="subtle" id="importButton">Importar JSON</button></div>
 <div class="group-label">Edición local · Sin inicio de sesión</div>
@@ -198,6 +205,41 @@ dialog h2{font-size:21px;margin:0 0 8px}
     selectedArtId=id;selectedId=art.capas[0].id;render();
   }
   function reindex(){catalog.cuadros.forEach(function(a,i){a.targetIndex=i;});}
+  function normalizeEmergence(value){
+    var p=value||{};
+    return {activo:p.activo!==false,duracionMs:Math.max(500,Math.min(3000,Number(p.duracionMs)||1400)),
+      escalaInicial:Math.max(.4,Math.min(1,Number(p.escalaInicial)||.7)),
+      intensidad:['suave','media','cinematografica'].includes(p.intensidad)?p.intensidad:'cinematografica',
+      destello:p.destello!==false};
+  }
+  function populateEmergence(){
+    var a=article();if(!a)return;
+    var p=normalizeEmergence(a.efectoEmergencia);
+    $('emergenceEnabled').checked=p.activo;
+    $('emergenceDuration').value=p.duracionMs;
+    $('emergenceScale').value=Math.round(p.escalaInicial*100);
+    $('emergenceIntensity').value=p.intensidad;
+    $('emergenceFlash').checked=p.destello;
+    $('emergenceDurationVal').textContent=(p.duracionMs/1000).toFixed(1)+' s';
+    $('emergenceScaleVal').textContent=Math.round(p.escalaInicial*100)+'%';
+    ['emergenceDuration','emergenceScale','emergenceIntensity','emergenceFlash'].forEach(function(id){$(id).disabled=!p.activo;});
+  }
+  function updateEmergence(){
+    var a=article();if(!a)return;
+    a.efectoEmergencia={
+      activo:$('emergenceEnabled').checked,
+      duracionMs:Number($('emergenceDuration').value),
+      escalaInicial:Number($('emergenceScale').value)/100,
+      intensidad:$('emergenceIntensity').value,
+      destello:$('emergenceFlash').checked
+    };
+    populateEmergence();
+    note('Emergencia 2.5D actualizada. Guarda el borrador y publícalo para verla en el visor.');
+  }
+  ['emergenceEnabled','emergenceDuration','emergenceScale','emergenceIntensity','emergenceFlash'].forEach(function(id){
+    $(id).addEventListener('input',updateEmergence);
+    $(id).addEventListener('change',updateEmergence);
+  });
   function invalidateTracking(){if(catalog){delete catalog.archivoMind;delete catalog.compilador;}}
   function newId(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*100000).toString(36);}
 
@@ -214,6 +256,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
       if(ratio<=0||ratio>5)throw Error('Proporciones no válidas en el cuadro '+art.id);
       art.relacionAltoAncho=ratio;
       art.targetIndex=i;
+      art.efectoEmergencia=normalizeEmergence(art.efectoEmergencia);
       var ids=new Set();
       art.capas.forEach(function(l){
         if(!l.id||!l.imagen||ids.has(l.id))throw Error('Cada capa debe tener ID e imagen únicos dentro de su cuadro.');
@@ -325,7 +368,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
     if(!catalog||!article())return;
     $('artName').textContent=article().nombre||article().id;
     $('artTitle').value=article().nombre||'';
-    drawArts();drawList();drawBoard();populate();
+    drawArts();drawList();drawBoard();populate();populateEmergence();
     $('deleteArt').disabled=catalog.cuadros.length<2;
     var index=catalog.cuadros.findIndex(function(a){return a.id===selectedArtId;});
     $('artUp').disabled=index<=0;$('artDown').disabled=index>=catalog.cuadros.length-1;
@@ -451,7 +494,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
           amplitud:Number(animation.amplitud||0),duracionMs:Number(animation.duracionMs||2000)}});
       }
       var payload={version:2,titulo:'Visor-222 · Imágenes AR',cuadros:[{
-        id:id,nombre:art.nombre||id,targetIndex:0,relacionAltoAncho:ratio,imagenObjetivo:image,capas:layers
+        id:id,nombre:art.nombre||id,targetIndex:0,relacionAltoAncho:ratio,imagenObjetivo:image,capas:layers,
+        efectoEmergencia:normalizeEmergence(art.efectoEmergencia)
       }]};
       var serialized=JSON.stringify(payload);
       var bytes=new TextEncoder().encode(serialized).length;
@@ -614,7 +658,8 @@ dialog h2{font-size:21px;margin:0 0 8px}
       }
       var art={
         id:newId('cuadro'),nombre:name,targetIndex:catalog.cuadros.length,
-        relacionAltoAncho:ratio,imagenObjetivo:target.src,capas:layers
+        relacionAltoAncho:ratio,imagenObjetivo:target.src,capas:layers,
+        efectoEmergencia:normalizeEmergence()
       };
       catalog.cuadros.push(art);reindex();invalidateTracking();
       selectedArtId=art.id;selectedId=art.capas[0].id;render();

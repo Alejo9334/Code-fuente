@@ -170,6 +170,15 @@ for(const expected of ['data-view="perspectiva"','data-view="lateral"','data-vie
 assert.ok(emergingPublisher.includes('espaciadoCapas:'),'El publicador debe conservar la separación global');
 assert.ok(emergingPublisher.includes('separacionZ:'),'El publicador debe conservar la separación individual');
 assert.ok(emergingViewer.includes('var globalGap='),'El visor debe aplicar separación global');
-assert.ok(emergingViewer.includes('physicalDepth*.22'),'El visor debe convertir la separación guardada en profundidad AR');
-console.log('Lienzo 3D, vistas y separación global/individual verificadas de editor a visor');
-console.log('Efecto 2.5D cinematográfico y configuración por cuadro preservados desde editor hasta visor');
+assert.ok(emergingViewer.includes('physicalDepth*.28'),'El visor debe convertir la separación guardada en profundidad AR');
+for(const expected of ['id="scaleX"','id="scaleY"','id="animationType"','value="desplazar"','value="balancear"','@keyframes slideX','@keyframes rock3d','max="0.08"','max="3"','max="15000"','espaciadoCapas=Math.max(0,Math.min(.08','escalaX','escalaY','packetVersion===2']){
+  assert.ok(emergingEditor.includes(expected),'Falta control ampliado o animación independiente: '+expected);
+}
+for(const expected of ["spec.type==='desplazar'","spec.type==='balancear'","slideX:Math.min(.035","tilt:Math.min(.45","physicalDepth*.28","Math.min(.08","type<0 || type>5"]){
+  assert.ok(emergingViewer.includes(expected),'El visor AR no procesa el nuevo ajuste: '+expected);
+}
+for(const expected of ["'desplazar','balancear'","separacionZ:Math.max(-.08","espaciadoCapas:Math.max(0,Math.min(.08","escalaX:Math.max(.25","escalaY:Math.max(.25"]){
+  assert.ok(emergingPublisher.includes(expected),'El publicador no conserva el ajuste: '+expected);
+}
+console.log('Lienzo 3D, escalas X/Y, rangos ampliados y seis animaciones verificadas de editor a visor');
+console.log('Efecto 2.5D y nuevas propiedades preservadas desde editor hasta publicación AR');

@@ -38,11 +38,21 @@ h1{font-size:17px;margin:0 0 6px}h2{font-size:14px;margin:0 0 12px}.muted{color:
 .layername{font-size:12px;font-weight:750;display:block}.layerdepth{font-size:11px;color:#8baccb;display:block;margin-top:4px}
 .eye{margin-left:auto;color:#69d6fe;font-size:12px}
 .center{display:flex;flex-direction:column;gap:15px}.preview-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.canvas-wrap{min-height:520px;border:1px solid #293d59;border-radius:17px;background:radial-gradient(circle at 50% 30%,#233958 0,#0b1425 76%);display:grid;place-items:center;padding:28px;overflow:hidden}
-.artboard{width:min(100%,420px);aspect-ratio:1638/2047;position:relative;transform-style:preserve-3d;perspective:850px;background:#05070b;box-shadow:0 16px 50px #0009;border:5px solid #394d64;border-radius:5px}
-.artboard .physical{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-.layerplane{position:absolute;transform-style:preserve-3d;pointer-events:none;transform-origin:center}
-.layerplane img{display:block;width:100%;height:100%;object-fit:fill;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.view-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 4px}
+.view-button{background:#13263b;color:#bdd2e9;border:1px solid #36516e;padding:8px 12px;font-size:11px}
+.view-button.active{background:#16445c;color:#9ce7ff;border-color:#55cafa;box-shadow:0 0 0 1px #55cafa55}
+.canvas-wrap{min-height:590px;border:1px solid #293d59;border-radius:17px;background:radial-gradient(ellipse at 50% 42%,#2b4565 0,#111f34 48%,#0b1425 82%);display:grid;place-items:center;padding:36px;overflow:visible;perspective:1100px;perspective-origin:50% 45%}
+.artboard{width:min(100%,380px);aspect-ratio:1638/2047;position:relative;transform-style:preserve-3d;perspective:850px;transform-origin:center center;transition:transform .42s cubic-bezier(.2,.75,.2,1);background:#05070b;box-shadow:0 28px 65px #000b;border:5px solid #60758e;border-radius:5px}
+.artboard[data-view="perspectiva"]{transform:rotateX(48deg) rotateY(-13deg) scale(.88)}
+.artboard[data-view="frontal"]{transform:none}
+.artboard[data-view="lateral"]{transform:rotateY(68deg) rotateX(5deg) scale(.84)}
+.artboard[data-view="superior"]{transform:rotateX(68deg) rotateZ(-4deg) scale(.84)}
+.artboard .physical{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;transform:translateZ(0)}
+.layerplane{position:absolute;transform-style:preserve-3d;pointer-events:none;transform-origin:center;backface-visibility:visible}
+.layerplane img{display:block;width:100%;height:100%;object-fit:fill;backface-visibility:visible;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.spacing-toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-top:13px;padding:12px;border:1px solid #2e4967;border-radius:13px;background:#0c192a}
+.spacing-field{flex:1;min-width:190px}
+.spacing-toolbar button{white-space:nowrap}
 .layerplane.focus{outline:2px dashed #58c9f4;outline-offset:2px}
 @keyframes floaty{from{translate:0 0}to{translate:0 var(--float-distance,-2.5%)}}
 @keyframes pulse{from{scale:1}to{scale:var(--pulse,1.05)}}
@@ -72,7 +82,7 @@ dialog h2{font-size:21px;margin:0 0 8px}
 .switch{display:flex;align-items:center;gap:8px;font-size:12px;color:#c2d4eb}
 .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media(max-width:1100px){.wrap{grid-template-columns:210px minmax(260px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.right>h2,.right>.full{grid-column:1/-1}}
-@media(max-width:700px){header{height:auto;padding:14px;align-items:start;flex-direction:column}.wrap{grid-template-columns:1fr;padding:10px}.canvas-wrap{min-height:380px;padding:15px}.right{display:flex}.artboard{width:min(100%,340px)}.panel{padding:14px}}
+@media(max-width:700px){header{height:auto;padding:14px;align-items:start;flex-direction:column}.wrap{grid-template-columns:1fr;padding:10px}.canvas-wrap{min-height:430px;padding:18px}.right{display:flex}.artboard{width:min(100%,300px)}.spacing-toolbar{align-items:stretch}.spacing-toolbar button{width:100%}.view-button{flex:1;min-width:calc(50% - 8px)}.panel{padding:14px}}
 </style>
 </head>
 <body>

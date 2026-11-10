@@ -52,7 +52,10 @@ jobs:
           import fs from 'node:fs';
           const original=JSON.parse(fs.readFileSync('public/prototipo-ar/catalogo.json','utf8'));
           const preview=JSON.parse(fs.readFileSync('tmp/ar-publicacion-revision/catalogo.json','utf8'));
-          if(original.cuadros.length!==preview.cuadros.length) throw Error('Publicador descartó cuadros');
+          if(preview.cuadros.length!==1 || preview.cuadros[0].id!=='cuadro-creeper-001') throw Error('La revisión debe empaquetar solo el cuadro seleccionado');
+          if(!original.cuadros.some(art=>art.id==='cuadro-creeper-001')) throw Error('El catálogo original debe conservar el cuadro base');
+          "
+          git diff --exit-code -- public/prototipo-ar/catalogo.json
           "
 
       - name: Validar carga incremental sin publicación real

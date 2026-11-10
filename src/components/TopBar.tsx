@@ -138,6 +138,17 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <QrCode className="w-4 h-4 text-[#2f6bff]" />
               </button>
 
+              {/* Preparar una nueva versión del visor para reemplazar la publicada */}
+              <button
+                onClick={onOpenExport}
+                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-lg transition-transform active:scale-95"
+                title="Generar la versión actualizada del visor. Después debes subir el HTML a GitHub Pages para publicarla."
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Actualizar visor</span>
+                <span className="md:hidden">↻</span>
+              </button>
+
               {/* Botón Exportar Visor */}
               <button
                 onClick={onOpenExport}

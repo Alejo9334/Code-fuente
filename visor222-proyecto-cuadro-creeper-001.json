@@ -1,0 +1,398 @@
+{
+  "version": 3,
+  "titulo": "Visor-222 · Imágenes AR",
+  "descripcion": "Catálogo estático validado para Visor-222 Preview",
+  "cuadros": [
+    {
+      "id": "cuadro-creeper-001",
+      "nombre": "Minecraft Creeper Graffiti",
+      "targetIndex": 0,
+      "relacionAltoAncho": 1.2496947,
+      "imagenObjetivo": "./cuadro-original.png.png",
+      "capas": [
+        {
+          "id": "capa-5",
+          "nombre": "Salpicaduras amarillas",
+          "imagen": "./capa-5.png.optimized.webp",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.015,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.012,
+            "duracionMs": 3400,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.2496947,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-4",
+          "nombre": "Graffiti y símbolos",
+          "imagen": "./capa-4.png.optimized.webp",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.07,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0.017,
+            "duracionMs": 3075,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.2496947,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-3",
+          "nombre": "Game Over",
+          "imagen": "./capa-3.png.optimized.webp",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.125,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "girar",
+            "amplitud": 7,
+            "duracionMs": 2750,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.2496947,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-2",
+          "nombre": "Creeper y TNT",
+          "imagen": "./capa-2.png.optimized.webp",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.18,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.025,
+            "duracionMs": 2425,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.2496947,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-1",
+          "nombre": "Logo Minecraft",
+          "imagen": "./capa-1.png.optimized.webp",
+          "ancho": 1,
+          "alto": 1.2496947,
+          "x": 0,
+          "y": 0,
+          "z": 0.235,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0.03,
+            "duracionMs": 2100,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.2496947,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        }
+      ],
+      "efectoEmergencia": {
+        "activo": true,
+        "duracionMs": 1600,
+        "escalaInicial": 0.62,
+        "intensidad": "cinematografica",
+        "destello": true
+      },
+      "espaciadoCapas": 0.02,
+      "parallax": {
+        "intensidad": 0.35
+      },
+      "presets": []
+    },
+    {
+      "id": "cuadro-mwa975aj-6lp",
+      "nombre": "Carnet",
+      "targetIndex": 1,
+      "relacionAltoAncho": 1.25,
+      "imagenObjetivo": "./cuadros/cuadro-mwa975aj-6lp/referencia.jpg",
+      "capas": [
+        {
+          "id": "capa-mwa9758a-dxy",
+          "nombre": "1",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-01-capa-mwa9758a-dxy.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": 0.075,
+          "y": 0.095,
+          "z": 0.015,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.012,
+            "duracionMs": 3400,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.25,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-mwa97591-7g1",
+          "nombre": "2",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-02-capa-mwa97591-7g1.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": -0.16,
+          "y": 0,
+          "z": 0.088,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "pulso",
+            "amplitud": 0.018,
+            "duracionMs": 2967,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.25,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-mwa9759t-w1s",
+          "nombre": "3",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-03-capa-mwa9759t-w1s.optimized.webp",
+          "ancho": 1,
+          "alto": 1.25,
+          "x": 0,
+          "y": -0.205,
+          "z": 0.162,
+          "rotation": 0,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "girar",
+            "amplitud": 8,
+            "duracionMs": 2533,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1,
+          "baseAlto": 1.25,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        },
+        {
+          "id": "capa-mwa975ai-1tfv",
+          "nombre": "4",
+          "imagen": "./cuadros/cuadro-mwa975aj-6lp/capa-04-capa-mwa975ai-1tfv.optimized.webp",
+          "ancho": 1.08,
+          "alto": 1.35,
+          "x": 0.2,
+          "y": 0.18,
+          "z": 0.235,
+          "rotation": 9,
+          "opacidad": 1,
+          "visible": true,
+          "animacion": {
+            "tipo": "flotar",
+            "amplitud": 0.03,
+            "duracionMs": 2100,
+            "trayectoria": {
+              "forma": "circulo",
+              "amplitud": 0.35
+            }
+          },
+          "baseAncho": 1.08,
+          "baseAlto": 1.35,
+          "separacionZ": 0,
+          "escalaUniforme": 1,
+          "escalaX": 1,
+          "escalaY": 1,
+          "rotationX": 0,
+          "rotationY": 0,
+          "pivotX": 0.5,
+          "pivotY": 0.5,
+          "sombra": {
+            "desenfoque": 12,
+            "x": 0,
+            "y": 8,
+            "opacidad": 35
+          }
+        }
+      ],
+      "efectoEmergencia": {
+        "activo": true,
+        "duracionMs": 1600,
+        "escalaInicial": 0.62,
+        "intensidad": "cinematografica",
+        "destello": true
+      },
+      "espaciadoCapas": 0.02,
+      "parallax": {
+        "intensidad": 0.35
+      },
+      "presets": []
+    }
+  ],
+  "archivoMind": "./targets.mind",
+  "compilador": {
+    "motor": "mind-ar",
+    "version": "1.2.5",
+    "cantidadObjetivos": 2
+  },
+  "cacheKey": "d95b53502c4af364"
+}
